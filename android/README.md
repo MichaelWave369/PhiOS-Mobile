@@ -2,6 +2,20 @@
 
 **Scope:** An ordinary, user-selectable Android HOME app for test devices and emulator. This project does not replace, unlock, root, flash, modify, or bypass Android firmware.
 
+## Rung 2.1b: Pinned Shelf and real launch proof
+
+- A native scrollable **Pinned Shelf** above the app list, populated only from installed launcher activities that the user has pinned
+- One-tap launch and long-press unpin from the shelf, with accessible labels and a shortcut to all pinned apps
+- At most eight icons on the shelf to bound layout and icon loading; all favorites remain accessible in the pinned app list
+- Layout preference to show or hide the shelf, persisted locally
+- A separate test-only `fixture` application compiled and installed in disposable emulator CI, with no permissions and a uniquely identifiable foreground screen
+- Emulator smoke tests for actual app launch **from the installed-app list and the pinned shelf** and returning to the PhiOS launcher
+- The `fixture` APK is never shipped inside the launcher APK and is not uploaded as a deliverable
+
+Installed activities launch through the Android `LauncherApps` API when permitted; if the platform gates that API for a non-default launcher, ΦOS falls back to a standard explicit `ACTION_MAIN` / `CATEGORY_LAUNCHER` intent for that same current-user app activity. Failures remain visible to the user. No broad app, notification or phone permission is requested.
+
+No Android notification, Internet, SMS, call, or system-setting privileges were added. The stock Home recovery test remains mandatory.
+
 ## Rung 2.1 additions
 
 - **Layout** action within the native launcher: show/hide clock, show/hide welcome card, and compact app rows
@@ -30,7 +44,7 @@ Requirements:
 - Android SDK Platform 36 and Build Tools 36.0.0
 - Gradle 9.6.0 and Android Gradle Plugin 9.4.0
 
-From repository root:
+From repository root (release/testing app only, **not** the fixture):
 
     gradle --no-daemon -p android :app:assembleDebug :app:testDebugUnitTest
 
@@ -78,3 +92,7 @@ Never claim device compatibility from a CI build or emulator pass. The workflow 
 ### Fresh emulator without a default HOME role
 
 Android API 35 virtual devices may start with no HOME role holder. The smoke gate verifies a stock system launcher candidate before mutating anything. When the role is empty, it temporarily seeds a known stock launcher, switches to PhiOS and back, then clears the role to return to the initial empty assignment. Both stock recovery and original role-state restoration must pass, with evidence in the JSON receipt. This behavior is restricted to the disposable emulator and does not imply that a user's device will have an unassigned Home app.
+
+### Test fixture privacy boundary
+
+The `android/fixture` project exists solely for reliable emulator verification. It is a separate app with no permissions, no account, and no data flow to PhiOS. Its `PHIOS CI TARGET LIVE` screen proves that the OS launched a distinct installed Android application. The regular native launcher workflow builds and uploads only `android/app/build/outputs/apk/debug/app-debug.apk`; the emulator workflow additionally builds `fixture:assembleDebug` but does not upload its APK.

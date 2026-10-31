@@ -18,6 +18,8 @@ from xml.etree import ElementTree
 ROOT = Path(__file__).resolve().parents[2]
 OUT = Path(__file__).resolve().parent / "out"
 APK = ROOT / "android/app/build/outputs/apk/debug/app-debug.apk"
+FIXTURE_APK = ROOT / "android/fixture/build/outputs/apk/debug/fixture-debug.apk"
+FIXTURE_PKG = "org.enterthefield.phiosmobile.citarget"
 PKG = "org.enterthefield.phiosmobile"
 COMPONENT = PKG + "/.MainActivity"
 RESULTS = []
@@ -104,6 +106,11 @@ def screenshot(label):
         print("Screenshot unavailable:", exc, flush=True)
 
 def install():
+    demand(FIXTURE_APK.is_file(), "Deterministic CI test app APK does not exist")
+    demand("Success" in adb("install", "-r", str(FIXTURE_APK), timeout=120),
+           "CI fixture app installation failed")
+    demand("package:" in adb("shell", "pm", "path", FIXTURE_PKG),
+           "Installed CI fixture package missing")
     demand(APK.is_file(), "APK does not exist")
     demand("Success" in adb("install", "-r", str(APK), timeout=120), "Install failed")
     demand("package:" in adb("shell", "pm", "path", PKG), "Package not found")
@@ -118,8 +125,21 @@ def permissions():
         demand("android.permission." + forbidden not in report, "Unexpected permission: " + forbidden)
 
 def launch():
-    adb("shell", "am", "start", "-W", "-n", COMPONENT)
-    nodes = visible("PHIOS MOBILE", "home")
+    start_result = adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    (OUT / "launch-command.txt").write_text(start_result)
+    try:
+        nodes = visible("PHIOS MOBILE", "home", tries=9)
+    except Exception:
+        print("LAUNCH COMMAND:", start_result, flush=True)
+        activity = adb("shell", "dumpsys", "activity", "activities", check=False)
+        (OUT / "launch-activity-dump.txt").write_text(activity[-30000:])
+        logcat = adb("logcat", "-d", "-t", "1300", check=False)
+        (OUT / "launch-logcat.txt").write_text(logcat[-150000:])
+        keywords = ("AndroidRuntime", "FATAL EXCEPTION", "phiosmobile", "ActivityTaskManager",
+                    "WindowManager", "ProcessRecord", "Force finishing", "ANR", "Exception")
+        relevant = [line for line in logcat.splitlines() if any(k in line for k in keywords)]
+        print("LAUNCH DIAGNOSTICS:", "\n".join(relevant[-90:]), flush=True)
+        raise
     for expected in ("YOUR APPS", "All apps", "SURF"):
         demand(locate(nodes, expected) is not None, "Home UI missing: " + expected)
     screenshot("01-native-home")
@@ -156,6 +176,68 @@ def pin():
     tap(nodes, "Pinned")
     visible("★ Pinned", "pinned-filter")
     screenshot("06-pinned-filter")
+
+
+def wait_for_fixture(stage):
+    try:
+        return visible("PHIOS CI TARGET LIVE", stage, tries=8)
+    except Exception:
+        activity = adb("shell", "dumpsys", "activity", "activities", check=False)
+        logcat = adb("logcat", "-d", "-t", "900", check=False)
+        (OUT / (stage + "-activity.txt")).write_text(activity[-30000:])
+        (OUT / (stage + "-logcat.txt")).write_text(logcat[-120000:])
+        relevant = [line for line in logcat.splitlines()
+                    if any(key in line for key in
+                           ("AndroidRuntime", "FATAL EXCEPTION", "phiosmobile",
+                            "ActivityTaskManager", "SecurityException", "START u0"))]
+        print("ANDROID LAUNCH DIAGNOSTICS:\n" + "\n".join(relevant[-90:]), flush=True)
+        raise
+
+
+def real_app_launch_and_shelf():
+    # A deterministic launchable Android APK is installed with the emulator
+    # workflow. This verifies the launcher actually opens *another* app, not
+    # just a simulated UI or hardcoded system action.
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("PINNED SHELF", "shelf-before")
+    demand(locate(nodes, "from pinned shelf") is not None,
+           "Previously pinned app not rendered on native Home shelf")
+    screenshot("06b-pinned-shelf")
+
+    tap(visible("Search launchable apps", "fixture-search"), "Search launchable apps")
+    adb("shell", "input", "text", "CI%sTarget")
+    # Dismiss the software keyboard so the target row is actually tappable.
+    # UIAutomator can report nodes even when an IME covers their coordinates.
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    nodes = visible("PhiOS CI Target", "fixture-matched")
+    demand(locate(nodes, "Tap to open") is not None,
+           "Fixture app missing from real Android LauncherApps discovery")
+
+    # Launch from the real installed-app list.
+    tap(nodes, "Tap to open")
+    wait_for_fixture("fixture-launched-list")
+    screenshot("06c-real-app-launched-from-list")
+
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("Search launchable apps", "fixture-return")
+    tap(nodes, "Search launchable apps")
+    adb("shell", "input", "text", "CI%sTarget")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    nodes = visible("Tap to open", "fixture-research")
+    x, y = coordinates(locate(nodes, "Tap to open"))
+    adb("shell", "input", "swipe", x, y, x, y, "1300")
+    nodes = visible("Open PhiOS CI Target from pinned shelf", "fixture-shelf")
+    screenshot("06d-fixture-pinned-shelf")
+
+    # Tap the pinned shelf, not an ordinary app row.
+    tap(nodes, "Open PhiOS CI Target from pinned shelf")
+    wait_for_fixture("fixture-launched-shelf")
+    screenshot("06e-real-app-launched-from-shelf")
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    visible("Open PhiOS CI Target from pinned shelf", "fixture-shelf-reload")
 
 
 def layout_preferences():
@@ -308,6 +390,8 @@ def evidence():
         "model": adb("shell", "getprop", "ro.product.model", check=False).strip(),
         "fingerprint": adb("shell", "getprop", "ro.build.fingerprint", check=False).strip(),
         "apkSha256": hashlib.sha256(APK.read_bytes()).hexdigest() if APK.exists() else None,
+        "testFixtureApkSha256": hashlib.sha256(FIXTURE_APK.read_bytes()).hexdigest()
+                                  if FIXTURE_APK.exists() else None,
         "defaultHomeChanged": ROLE_EVIDENCE["attempted"],
         "initialHomeRoleHolders": ROLE_EVIDENCE["initialRoleHolders"],
         "baselineStockHomeSeeded": ROLE_EVIDENCE["baselineSeeded"],
@@ -333,6 +417,7 @@ def main():
             ("Exercise PhiSurf and status", surf_status),
             ("Filter installed apps", search),
             ("Pin app and verify persistence", pin),
+            ("Launch real Android fixture from list and pinned shelf", real_app_launch_and_shelf),
             ("Home layout survives restart and reset", layout_preferences),
             ("Temporarily select PhiOS HOME and restore stock HOME", home_role_roundtrip),
         ]:

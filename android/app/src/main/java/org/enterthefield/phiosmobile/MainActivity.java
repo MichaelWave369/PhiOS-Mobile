@@ -23,6 +23,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.HorizontalScrollView;
 import android.widget.TextClock;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -61,7 +62,10 @@ public final class MainActivity extends Activity {
     private View homeClock;
     private View homeDate;
     private View homeHero;
+    private LinearLayout pinnedShelf;
+    private LinearLayout pinnedShelfItems;
     private boolean compactRows;
+    private static final int MAX_SHELF_APPS = 8;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -134,7 +138,7 @@ public final class MainActivity extends Activity {
         identity.setPadding(dp(10), 0, 0, 0);
         identity.setOrientation(LinearLayout.VERTICAL);
         identity.addView(text("PHIOS MOBILE", 19, TEXT, true));
-        identity.addView(text("NATIVE LAUNCHER · RUNG 2", 10, MUTED, true));
+        identity.addView(text("NATIVE LAUNCHER · RUNG 2.1B", 10, MUTED, true));
         header.addView(identity, new LinearLayout.LayoutParams(0, -2, 1));
         header.addView(button("✳ SURF", this::openSurf));
         root.addView(header);
@@ -170,6 +174,32 @@ public final class MainActivity extends Activity {
         heroParams.topMargin = dp(17);
         root.addView(hero, heroParams);
         homeHero = hero;
+
+        // A bounded horizontal shelf keeps favorite apps one tap away.
+        // It's populated exclusively from real installed launcher activities.
+        pinnedShelf = new LinearLayout(this);
+        pinnedShelf.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout shelfHeading = new LinearLayout(this);
+        shelfHeading.setGravity(Gravity.CENTER_VERTICAL);
+        TextView shelfTitle = text("PINNED SHELF", 11, CYAN, true);
+        shelfHeading.addView(shelfTitle, new LinearLayout.LayoutParams(0, -2, 1));
+        shelfHeading.addView(button("All pinned", () -> {
+            favoritesOnly = true;
+            if (search != null) search.setText("");
+            renderApps();
+        }), new LinearLayout.LayoutParams(dp(102), dp(43)));
+        pinnedShelf.addView(shelfHeading);
+        HorizontalScrollView shelfScroll = new HorizontalScrollView(this);
+        shelfScroll.setHorizontalScrollBarEnabled(false);
+        shelfScroll.setFillViewport(true);
+        pinnedShelfItems = new LinearLayout(this);
+        pinnedShelfItems.setOrientation(LinearLayout.HORIZONTAL);
+        pinnedShelfItems.setGravity(Gravity.CENTER_VERTICAL);
+        shelfScroll.addView(pinnedShelfItems);
+        pinnedShelf.addView(shelfScroll, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout.LayoutParams shelfParams = new LinearLayout.LayoutParams(-1, -2);
+        shelfParams.topMargin = dp(11);
+        root.addView(pinnedShelf, shelfParams);
 
         LinearLayout actions = new LinearLayout(this);
         LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(-1, dp(49));
@@ -238,6 +268,7 @@ public final class MainActivity extends Activity {
     private void reloadInstalledApps() {
         if (launcherApps == null) {
             installed = Collections.emptyList();
+            renderPinnedShelf();
             appCount.setText("UNAVAILABLE");
             showEmpty("Android LauncherApps service unavailable.");
             return;
@@ -249,6 +280,7 @@ public final class MainActivity extends Activity {
             renderApps();
         } catch (RuntimeException error) {
             installed = Collections.emptyList();
+            renderPinnedShelf();
             appCount.setText("UNAVAILABLE");
             showEmpty("Could not discover applications on this device.");
         }
@@ -262,6 +294,7 @@ public final class MainActivity extends Activity {
 
     private void renderApps() {
         if (appList == null) return;
+        renderPinnedShelf();
         List<LauncherActivityInfo> visible = new ArrayList<>();
         String query = search == null ? "" : search.getText().toString();
         for (LauncherActivityInfo app : installed) {
@@ -314,13 +347,7 @@ public final class MainActivity extends Activity {
         row.setContentDescription(String.valueOf(info.getLabel()) + (pinned.contains(componentKey) ? ", pinned" : ""));
         row.setClickable(true);
         row.setFocusable(true);
-        row.setOnClickListener(view -> {
-            try {
-                launcherApps.startMainActivity(info.getComponentName(), Process.myUserHandle(), null, null);
-            } catch (RuntimeException error) {
-                Toast.makeText(this, "Android could not launch this app.", Toast.LENGTH_SHORT).show();
-            }
-        });
+        row.setOnClickListener(view -> launchApp(info));
         row.setOnLongClickListener(view -> {
             if (pinned.contains(componentKey)) pinned.remove(componentKey);
             else pinned.add(componentKey);
@@ -332,6 +359,94 @@ public final class MainActivity extends Activity {
         appList.addView(row, rowParams);
     }
 
+    private void launchApp(LauncherActivityInfo info) {
+        try {
+            // Prefer the platform's dedicated current-user launcher API.
+            launcherApps.startMainActivity(info.getComponentName(), Process.myUserHandle(), null, null);
+            return;
+        } catch (RuntimeException launcherFailure) {
+            // Some Android builds gate LauncherApps launches behind the HOME role.
+            // A normal explicit ACTION_MAIN/LAUNCHER intent is permitted for the
+            // current user's exported, discoverable app activity.
+        }
+        try {
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            intent.setComponent(info.getComponentName());
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+            startActivity(intent);
+        } catch (RuntimeException error) {
+            Toast.makeText(this, "Android could not launch this app.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void renderPinnedShelf() {
+        if (pinnedShelfItems == null) return;
+        pinnedShelfItems.removeAllViews();
+        List<String> availableKeys = new ArrayList<>();
+        for (LauncherActivityInfo info : installed) {
+            availableKeys.add(info.getComponentName().flattenToString());
+        }
+        List<String> shelfKeys = LauncherLogic.shelfKeys(availableKeys, pinned, MAX_SHELF_APPS);
+        if (shelfKeys.isEmpty()) {
+            TextView empty = text("Long-press an app below to pin it here.", 11, MUTED, false);
+            empty.setPadding(dp(2), dp(8), dp(2), dp(8));
+            pinnedShelfItems.addView(empty);
+            return;
+        }
+        for (String key : shelfKeys) {
+            LauncherActivityInfo match = null;
+            for (LauncherActivityInfo info : installed) {
+                if (info.getComponentName().flattenToString().equals(key)) {
+                    match = info;
+                    break;
+                }
+            }
+            if (match == null) continue;
+            final LauncherActivityInfo pinnedInfo = match;
+            LinearLayout tile = new LinearLayout(this);
+            tile.setOrientation(LinearLayout.VERTICAL);
+            tile.setGravity(Gravity.CENTER);
+            tile.setPadding(dp(4), dp(9), dp(4), dp(7));
+            tile.setBackground(surface(PANEL, 13, Color.rgb(48, 94, 112)));
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(82), dp(91));
+            params.setMargins(0, dp(4), dp(9), dp(5));
+
+            ImageView icon = new ImageView(this);
+            try { icon.setImageDrawable(match.getIcon(0)); }
+            catch (RuntimeException ignored) {
+                icon.setImageResource(android.R.drawable.sym_def_app_icon);
+            }
+            tile.addView(icon, new LinearLayout.LayoutParams(dp(36), dp(36)));
+            TextView label = text(String.valueOf(match.getLabel()), 10, TEXT, true);
+            label.setSingleLine(true);
+            label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            label.setGravity(Gravity.CENTER);
+            tile.addView(label, new LinearLayout.LayoutParams(-1, dp(27)));
+            tile.setClickable(true);
+            tile.setFocusable(true);
+            tile.setContentDescription("Open " + match.getLabel()
+                    + " from pinned shelf. Long press to unpin.");
+            tile.setOnClickListener(view -> launchApp(pinnedInfo));
+            tile.setOnLongClickListener(view -> {
+                pinned.remove(key);
+                preferences.edit().putStringSet(PINNED, new HashSet<>(pinned)).apply();
+                renderApps();
+                Toast.makeText(this, "Unpinned " + pinnedInfo.getLabel(), Toast.LENGTH_SHORT).show();
+                return true;
+            });
+            pinnedShelfItems.addView(tile, params);
+        }
+        if (pinned.size() > shelfKeys.size()) {
+            Button more = button("All pinned", () -> {
+                favoritesOnly = true;
+                if (search != null) search.setText("");
+                renderApps();
+            });
+            pinnedShelfItems.addView(more, new LinearLayout.LayoutParams(dp(95), dp(58)));
+        }
+    }
+
     private void applyHomeLayout() {
         if (preferences == null) return;
         if (homeClock != null) homeClock.setVisibility(
@@ -340,17 +455,21 @@ public final class MainActivity extends Activity {
                 preferences.getBoolean("show_clock", true) ? View.VISIBLE : View.GONE);
         if (homeHero != null) homeHero.setVisibility(
                 preferences.getBoolean("show_hero", true) ? View.VISIBLE : View.GONE);
+        if (pinnedShelf != null) pinnedShelf.setVisibility(
+                preferences.getBoolean("show_shelf", true) ? View.VISIBLE : View.GONE);
         compactRows = preferences.getBoolean("compact_rows", false);
     }
 
     private void openLayout() {
         final String[] choices = {
-                "Show large clock and date", "Show welcome card", "Compact app rows"
+                "Show large clock and date", "Show welcome card",
+                "Compact app rows", "Show pinned shelf"
         };
         final boolean[] selections = {
                 preferences.getBoolean("show_clock", true),
                 preferences.getBoolean("show_hero", true),
-                preferences.getBoolean("compact_rows", false)
+                preferences.getBoolean("compact_rows", false),
+                preferences.getBoolean("show_shelf", true)
         };
         new AlertDialog.Builder(this)
                 .setTitle("Home layout")
@@ -361,6 +480,7 @@ public final class MainActivity extends Activity {
                             .putBoolean("show_clock", selections[0])
                             .putBoolean("show_hero", selections[1])
                             .putBoolean("compact_rows", selections[2])
+                            .putBoolean("show_shelf", selections[3])
                             .apply();
                     applyHomeLayout();
                     renderApps();
@@ -370,6 +490,7 @@ public final class MainActivity extends Activity {
                             .remove("show_clock")
                             .remove("show_hero")
                             .remove("compact_rows")
+                            .remove("show_shelf")
                             .apply();
                     applyHomeLayout();
                     renderApps();

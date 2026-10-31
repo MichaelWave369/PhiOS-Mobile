@@ -16,6 +16,12 @@ The new **Android Emulator Smoke** workflow boots a disposable Android 15 (API 3
 
 See [emulator testing](android/README.md#run-without-installing-anything-locally) and [review checklist](docs/ANDROID_NATIVE_CHECKLIST.md).
 
+## Rung 2.1b: Pinned Shelf and real app launch evidence
+
+The Android launcher now has a horizontal **Pinned Shelf** on its actual Home screen. Long-press a real installed app to pin it; tap its shelf icon to launch it, or long-press the icon to unpin. The shelf is capped at eight icons for responsive performance; **All pinned** exposes everything else. Show/hide the shelf under native Layout preferences.
+
+A separate `android/fixture` module builds a harmless test-only Android app for GitHub's disposable emulator. Our CI installs it and attempts launch from both the actual app list and the shelf, checking the real app UI and return to PhiOS. This fixture APK is **not part of** the published launcher APK or any release. CI still verifies default Home restoration. No new Android permissions.
+
 ## Rung 2: Android native launcher preview
 
 The `android/` subproject is a separate, user-selectable **Android HOME app**. It discovers and opens current-user launchable apps through Android LauncherApps, supports local pinned shortcuts and native PhiSurf, and provides a way to return to the original default Home. This is **not a new Android OS**, custom ROM, or daily-driver qualified launcher.
