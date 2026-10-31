@@ -57,7 +57,10 @@ class LaunchReadinessTests(unittest.TestCase):
         focused = ("mFocusedWindow=Window{5bf875d u0 Application Not Responding: "
                    "com.google.android.apps.nexuslauncher}")
         close = smoke.stock_launcher_anr_close_button(nodes, focused)
-        self.assertIs(close, nodes[2])
+        # ElementTree.iter("node") excludes the <hierarchy> root, so the
+        # two real Android UI nodes occupy indices 0 and 1.
+        self.assertEqual(len(nodes), 2)
+        self.assertIs(close, nodes[1])
         self.assertEqual(smoke.coordinates(close), ("540", "1233"))
 
     def test_other_app_anr_cannot_be_dismissed(self):
