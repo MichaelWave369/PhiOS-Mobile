@@ -15,9 +15,9 @@ The emulator gate explicitly does **not** change the default HOME activity. It t
 - [ ] Open Layout dialog; hide hero and verify it disappears
 - [ ] Force-stop/restart and verify layout setting persisted
 - [ ] Reset layout; verify welcome card returns
-- [ ] Read current HOME role and exact original launcher component
+- [ ] Record current HOME role (including empty) and validate a qualified stock system launcher component
 - [ ] Temporarily select PhiOS as default HOME, send Home key, verify PhiOS renders
-- [ ] Restore the previously selected HOME role; fail CI if restoration is not confirmed
+- [ ] Recover stock HOME, then restore the exact initial role assignment (even if empty); fail CI if either restoration is not confirmed
 - [ ] Collect and inspect default-HOME and restored-home screenshots and receipt
 - [ ] Never claim physical hardware support from disposable-emulator success
 

@@ -46,6 +46,18 @@ jobs:
           set -euo pipefail
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+          # The emulator runner otherwise downloads the newest emulator itself.
+          # Preinstall with bounded retries to handle occasional truncated CDN zips.
+          for attempt in 1 2 3; do
+            if "$SDKMANAGER" --install emulator; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Android emulator SDK download failed on all three attempts."
+              exit 1
+            fi
+            sleep 8
+          done
       - name: Compile launcher and run JVM tests
         run: gradle --no-daemon -p android :app:assembleDebug :app:testDebugUnitTest --stacktrace
       - name: Enable emulator hardware acceleration

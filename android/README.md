@@ -7,7 +7,7 @@
 - **Layout** action within the native launcher: show/hide clock, show/hide welcome card, and compact app rows
 - Native preferences persist after closing/restarting the app; no web/backend synchronization
 - Emulator CI tests the layout dialog, persistence and reset
-- Emulator CI additionally switches to PhiOS as temporary default HOME and restores the recorded original HOME role; a failed restoration fails the job
+- Emulator CI additionally switches to PhiOS as temporary default HOME and recovers a verified stock HOME launcher, then restores the original role state (which can be empty on a fresh emulator); a failed restoration fails the job
 - Default HOME switching remains **manual** on physical devices, never performed by the installed app silently
 
 ## Implemented
@@ -73,4 +73,8 @@ Open **Actions → Android Emulator Smoke** in the PhiOS-Mobile GitHub repositor
 
 The workflow uploads `phios-mobile-emulator-api35-evidence`: actual PNG screenshots, XML UI snapshots, recent logcat, package/activity reports, compiled APK permissions and a JSON receipt tied to an APK SHA-256 digest. A red run is evidence of a failed check, not proof that the launcher is universally broken. Browser PWA testing, screen-reader review, physical Android hardware and HOME-default rollback are separate, pending gates.
 
-Never claim device compatibility from a CI build or emulator pass. The workflow temporarily selects PhiOS as default Home **only on the disposable emulator**, then restores the originally selected Home package. It does not perform an emergency-call test.
+Never claim device compatibility from a CI build or emulator pass. The workflow temporarily selects PhiOS as default Home **only on the disposable emulator**, then restores the original role assignment, including an initially empty assignment. It does not perform an emergency-call test.
+
+### Fresh emulator without a default HOME role
+
+Android API 35 virtual devices may start with no HOME role holder. The smoke gate verifies a stock system launcher candidate before mutating anything. When the role is empty, it temporarily seeds a known stock launcher, switches to PhiOS and back, then clears the role to return to the initial empty assignment. Both stock recovery and original role-state restoration must pass, with evidence in the JSON receipt. This behavior is restricted to the disposable emulator and does not imply that a user's device will have an unassigned Home app.
