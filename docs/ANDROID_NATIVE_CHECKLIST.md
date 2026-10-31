@@ -48,3 +48,13 @@ The emulator gate explicitly does **not** change the default HOME activity. It t
 - [ ] Keep daily-driver and emergency calling qualification explicitly pending
 
 Use [the native launcher README](../android/README.md) for installation and scope.
+
+## Rung 2.1c: Post-merge emulator boot reliability
+
+- [ ] Check a clean Android emulator launch at the actual merged commit
+- [ ] If the UI is not initially visible, record window/activity snapshots and process state
+- [ ] Distinguish background setup/keyguard interference from a PhiOS crash or invisible foreground UI
+- [ ] Retry only when PhiOS remains running but another Android surface owns the foreground
+- [ ] Fail on missing process, PhiOS-attributed fatal exception, or resumed launcher without UI
+- [ ] Record startup attempts, screenshots, and exact APK SHA-256 in the test receipt
+- [ ] Verify a green emulator run **after** merging, not only before

@@ -23,6 +23,7 @@ FIXTURE_PKG = "org.enterthefield.phiosmobile.citarget"
 PKG = "org.enterthefield.phiosmobile"
 COMPONENT = PKG + "/.MainActivity"
 RESULTS = []
+STARTUP_EVIDENCE = {"attempts": 0, "initialUiDelay": False, "classification": None}
 ROLE_EVIDENCE = {
     "attempted": False, "restored": False, "originalPackage": None,
     "initialRoleHolders": [], "stockPackage": None, "stockComponent": None,
@@ -124,25 +125,85 @@ def permissions():
                       "READ_CALL_LOG", "ACCESS_FINE_LOCATION"):
         demand("android.permission." + forbidden not in report, "Unexpected permission: " + forbidden)
 
+def is_phi_crash(logcat, package=PKG):
+    """Only treat a fatal exception attributed to our launcher as an app crash."""
+    lines = logcat.splitlines()
+    for index, line in enumerate(lines):
+        if "FATAL EXCEPTION" not in line or "AndroidRuntime" not in line:
+            continue
+        nearby = "\n".join(lines[index:index + 9])
+        if re.search(r"\bProcess:\s*" + re.escape(package) + r"(?:\s|,|$)", nearby):
+            return True
+    return False
+
+
+def launcher_has_foreground(activity):
+    """Observe resumed PhiOS Activity, not historical activity stack entries."""
+    markers = ("topResumedActivity", "mResumedActivity", "ResumedActivity")
+    return any(PKG in line and any(marker in line for marker in markers)
+               for line in activity.splitlines())
+
+
+def startup_diagnostics(attempt):
+    """Capture enough evidence to distinguish a wrong foreground from a crash."""
+    activity = adb("shell", "dumpsys", "activity", "activities", check=False)
+    windows = adb("shell", "dumpsys", "window", "windows", check=False)
+    logcat = adb("logcat", "-d", "-t", "1600", check=False)
+    process = adb("shell", "pidof", PKG, check=False).strip()
+    prefix = "startup-attempt-" + str(attempt)
+    (OUT / (prefix + "-activity.txt")).write_text(activity[-30000:])
+    (OUT / (prefix + "-windows.txt")).write_text(windows[-30000:])
+    (OUT / (prefix + "-logcat.txt")).write_text(logcat[-140000:])
+    screenshot(prefix)
+    return {
+        "processRunning": bool(process),
+        "launcherResumed": launcher_has_foreground(activity),
+        "launcherFatalException": is_phi_crash(logcat),
+    }
+
+
 def launch():
-    start_result = adb("shell", "am", "start", "-W", "-n", COMPONENT)
-    (OUT / "launch-command.txt").write_text(start_result)
-    try:
-        nodes = visible("PHIOS MOBILE", "home", tries=9)
-    except Exception:
-        print("LAUNCH COMMAND:", start_result, flush=True)
-        activity = adb("shell", "dumpsys", "activity", "activities", check=False)
-        (OUT / "launch-activity-dump.txt").write_text(activity[-30000:])
-        logcat = adb("logcat", "-d", "-t", "1300", check=False)
-        (OUT / "launch-logcat.txt").write_text(logcat[-150000:])
-        keywords = ("AndroidRuntime", "FATAL EXCEPTION", "phiosmobile", "ActivityTaskManager",
-                    "WindowManager", "ProcessRecord", "Force finishing", "ANR", "Exception")
-        relevant = [line for line in logcat.splitlines() if any(k in line for k in keywords)]
-        print("LAUNCH DIAGNOSTICS:", "\n".join(relevant[-90:]), flush=True)
-        raise
-    for expected in ("YOUR APPS", "All apps", "SURF"):
-        demand(locate(nodes, expected) is not None, "Home UI missing: " + expected)
-    screenshot("01-native-home")
+    # Emulator runners report boot completion before all first-boot surfaces
+    # necessarily settle. Wake the virtual display and dismiss only its
+    # normal keyguard. This action is exclusively on the disposable emulator.
+    adb("shell", "input", "keyevent", "KEYCODE_WAKEUP", check=False)
+    adb("shell", "wm", "dismiss-keyguard", check=False)
+    adb("shell", "input", "keyevent", "KEYCODE_MENU", check=False)
+
+    for attempt in range(1, 4):
+        STARTUP_EVIDENCE["attempts"] = attempt
+        start_result = adb("shell", "am", "start", "-W", "-n", COMPONENT)
+        (OUT / ("launch-command-" + str(attempt) + ".txt")).write_text(start_result)
+        demand("Error:" not in start_result, "Android refused to start the launcher: " + start_result)
+        try:
+            nodes = visible("PHIOS MOBILE", "home-" + str(attempt), tries=4)
+        except AssertionError:
+            detail = startup_diagnostics(attempt)
+            STARTUP_EVIDENCE["classification"] = detail
+            print("STARTUP ATTEMPT", attempt, detail, flush=True)
+            # Never convert an app crash or an actually resumed but invisible
+            # launcher into a passing flaky retry. These are product failures.
+            demand(not detail["launcherFatalException"],
+                   "PhiOS launcher fatal exception; see startup diagnostics")
+            demand(detail["processRunning"],
+                   "PhiOS process absent after Android start; see startup diagnostics")
+            demand(not detail["launcherResumed"],
+                   "PhiOS resumed but its UI is missing; see startup diagnostics")
+            if attempt >= 3:
+                raise AssertionError("Android never brought PhiOS to the foreground "
+                                     "after 3 startup attempts; see screenshots and window dumps")
+            STARTUP_EVIDENCE["initialUiDelay"] = True
+            time.sleep(3)
+            continue
+
+        for expected in ("YOUR APPS", "All apps", "SURF"):
+            demand(locate(nodes, expected) is not None,
+                   "Home UI missing after successful startup: " + expected)
+        STARTUP_EVIDENCE["classification"] = {"processRunning": True,
+                                               "launcherUiVisible": True}
+        screenshot("01-native-home")
+        return
+    raise AssertionError("PhiOS launcher startup loop exhausted")
 
 def surf_status():
     tap(visible("SURF", "before-surf"), "SURF")
@@ -386,6 +447,7 @@ def evidence():
         print("Optional diagnostic capture failed:", exc, flush=True)
     receipt = {
         "scope": "Disposable Android emulator; no physical device qualification",
+        "launcherStartup": STARTUP_EVIDENCE,
         "apiLevel": adb("shell", "getprop", "ro.build.version.sdk", check=False).strip(),
         "model": adb("shell", "getprop", "ro.product.model", check=False).strip(),
         "fingerprint": adb("shell", "getprop", "ro.build.fingerprint", check=False).strip(),
