@@ -2,6 +2,14 @@
 
 **Scope:** An ordinary, user-selectable Android HOME app for test devices and emulator. This project does not replace, unlock, root, flash, modify, or bypass Android firmware.
 
+## Rung 2.1 additions
+
+- **Layout** action within the native launcher: show/hide clock, show/hide welcome card, and compact app rows
+- Native preferences persist after closing/restarting the app; no web/backend synchronization
+- Emulator CI tests the layout dialog, persistence and reset
+- Emulator CI additionally switches to PhiOS as temporary default HOME and restores the recorded original HOME role; a failed restoration fails the job
+- Default HOME switching remains **manual** on physical devices, never performed by the installed app silently
+
 ## Implemented
 
 - Native HOME/DEFAULT intent filter plus independent LAUNCHER entry for opening the app before selecting it as Home
@@ -65,4 +73,4 @@ Open **Actions → Android Emulator Smoke** in the PhiOS-Mobile GitHub repositor
 
 The workflow uploads `phios-mobile-emulator-api35-evidence`: actual PNG screenshots, XML UI snapshots, recent logcat, package/activity reports, compiled APK permissions and a JSON receipt tied to an APK SHA-256 digest. A red run is evidence of a failed check, not proof that the launcher is universally broken. Browser PWA testing, screen-reader review, physical Android hardware and HOME-default rollback are separate, pending gates.
 
-Never claim device compatibility from a CI build or emulator pass. The workflow does not select PhiOS as default Home or perform an emergency-call test.
+Never claim device compatibility from a CI build or emulator pass. The workflow temporarily selects PhiOS as default Home **only on the disposable emulator**, then restores the originally selected Home package. It does not perform an emergency-call test.

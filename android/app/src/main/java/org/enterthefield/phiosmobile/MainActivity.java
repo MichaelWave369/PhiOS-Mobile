@@ -58,6 +58,10 @@ public final class MainActivity extends Activity {
     private TextView emptyView;
     private EditText search;
     private boolean favoritesOnly;
+    private View homeClock;
+    private View homeDate;
+    private View homeHero;
+    private boolean compactRows;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -143,6 +147,7 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams clockParams = new LinearLayout.LayoutParams(-1, -2);
         clockParams.topMargin = dp(22);
         root.addView(clock, clockParams);
+        homeClock = clock;
 
         TextClock date = new TextClock(this);
         date.setFormat12Hour("EEEE, MMMM d");
@@ -150,6 +155,7 @@ public final class MainActivity extends Activity {
         date.setTextColor(MUTED);
         date.setTextSize(13);
         root.addView(date);
+        homeDate = date;
 
         TextView headline = text("A different kind of mobile.", 19, TEXT, true);
         headline.setPadding(dp(17), dp(18), dp(17), dp(4));
@@ -163,6 +169,7 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, -2);
         heroParams.topMargin = dp(17);
         root.addView(hero, heroParams);
+        homeHero = hero;
 
         LinearLayout actions = new LinearLayout(this);
         LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(-1, dp(49));
@@ -176,8 +183,9 @@ public final class MainActivity extends Activity {
             favoritesOnly = true;
             renderApps();
         });
+        Button layout = button("Layout", this::openLayout);
         Button sysSettings = button("System ⚙", this::openSettings);
-        for (Button action : new Button[]{all, favorites, sysSettings}) {
+        for (Button action : new Button[]{all, favorites, layout, sysSettings}) {
             LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -1, 1);
             p.setMargins(dp(2), 0, dp(2), 0);
             actions.addView(action, p);
@@ -224,6 +232,7 @@ public final class MainActivity extends Activity {
         footnote.setPadding(0, dp(10), 0, 0);
         root.addView(footnote);
         setContentView(root);
+        applyHomeLayout();
     }
 
     private void reloadInstalledApps() {
@@ -284,13 +293,13 @@ public final class MainActivity extends Activity {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(dp(12), dp(6), dp(12), dp(6));
         row.setBackground(surface(PANEL, 13, Color.rgb(39, 63, 82)));
-        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, dp(62));
+        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, dp(compactRows ? 52 : 62));
         rowParams.bottomMargin = dp(8);
 
         ImageView icon = new ImageView(this);
         try { icon.setImageDrawable(info.getIcon(0)); }
         catch (RuntimeException ignored) { icon.setImageResource(android.R.drawable.sym_def_app_icon); }
-        row.addView(icon, new LinearLayout.LayoutParams(dp(36), dp(36)));
+        row.addView(icon, new LinearLayout.LayoutParams(dp(compactRows ? 28 : 36), dp(compactRows ? 28 : 36)));
 
         LinearLayout titles = new LinearLayout(this);
         titles.setOrientation(LinearLayout.VERTICAL);
@@ -321,6 +330,52 @@ public final class MainActivity extends Activity {
             return true;
         });
         appList.addView(row, rowParams);
+    }
+
+    private void applyHomeLayout() {
+        if (preferences == null) return;
+        if (homeClock != null) homeClock.setVisibility(
+                preferences.getBoolean("show_clock", true) ? View.VISIBLE : View.GONE);
+        if (homeDate != null) homeDate.setVisibility(
+                preferences.getBoolean("show_clock", true) ? View.VISIBLE : View.GONE);
+        if (homeHero != null) homeHero.setVisibility(
+                preferences.getBoolean("show_hero", true) ? View.VISIBLE : View.GONE);
+        compactRows = preferences.getBoolean("compact_rows", false);
+    }
+
+    private void openLayout() {
+        final String[] choices = {
+                "Show large clock and date", "Show welcome card", "Compact app rows"
+        };
+        final boolean[] selections = {
+                preferences.getBoolean("show_clock", true),
+                preferences.getBoolean("show_hero", true),
+                preferences.getBoolean("compact_rows", false)
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("Home layout")
+                .setMultiChoiceItems(choices, selections,
+                        (dialog, index, checked) -> selections[index] = checked)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    preferences.edit()
+                            .putBoolean("show_clock", selections[0])
+                            .putBoolean("show_hero", selections[1])
+                            .putBoolean("compact_rows", selections[2])
+                            .apply();
+                    applyHomeLayout();
+                    renderApps();
+                })
+                .setNeutralButton("Reset", (dialog, which) -> {
+                    preferences.edit()
+                            .remove("show_clock")
+                            .remove("show_hero")
+                            .remove("compact_rows")
+                            .apply();
+                    applyHomeLayout();
+                    renderApps();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void openSettings() {

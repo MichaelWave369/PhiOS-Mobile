@@ -11,8 +11,18 @@
 
 The emulator gate explicitly does **not** change the default HOME activity. It tests neither voice service reliability nor platform recovery. An emulator pass is narrow evidence, not device certification.
 
+## Rung 2.1 automatic emulator gates (PR under review)
+- [ ] Open Layout dialog; hide hero and verify it disappears
+- [ ] Force-stop/restart and verify layout setting persisted
+- [ ] Reset layout; verify welcome card returns
+- [ ] Read current HOME role and exact original launcher component
+- [ ] Temporarily select PhiOS as default HOME, send Home key, verify PhiOS renders
+- [ ] Restore the previously selected HOME role; fail CI if restoration is not confirmed
+- [ ] Collect and inspect default-HOME and restored-home screenshots and receipt
+- [ ] Never claim physical hardware support from disposable-emulator success
+
 ## Manual emulator follow-up
-- [ ] Test choosing PhiOS Mobile as default HOME and safely reverting to stock
+- [ ] Independently retest default HOME and stock restoration with manual interaction
 - [ ] Rotate and resize; verify layout, keyboard and dock interactions
 - [ ] Real app-launch and return from another app
 - [ ] TalkBack screen reader, physical keyboard, focus order, touch targets

@@ -21,6 +21,8 @@ APK = ROOT / "android/app/build/outputs/apk/debug/app-debug.apk"
 PKG = "org.enterthefield.phiosmobile"
 COMPONENT = PKG + "/.MainActivity"
 RESULTS = []
+ROLE_EVIDENCE = {"attempted": False, "restored": False, "originalPackage": None}
+
 
 def cmd(*args, timeout=60, check=True):
     r = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
@@ -151,6 +153,68 @@ def pin():
     visible("★ Pinned", "pinned-filter")
     screenshot("06-pinned-filter")
 
+
+def layout_preferences():
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("Layout", "layout-before")
+    tap(nodes, "Layout")
+    nodes = visible("Home layout", "layout-dialog")
+    demand(locate(nodes, "Show welcome card") is not None, "Welcome preference absent")
+    demand(locate(nodes, "Compact app rows") is not None, "Compact preference absent")
+    tap(nodes, "Show welcome card")
+    nodes = visible("Save", "layout-save")
+    tap(nodes, "Save")
+    nodes = visible("PHIOS MOBILE", "layout-saved")
+    demand(locate(nodes, "A different kind of mobile.") is None, "Hero remained visible after disabling")
+    screenshot("07-layout-hero-hidden")
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("PHIOS MOBILE", "layout-reload")
+    demand(locate(nodes, "A different kind of mobile.") is None, "Home layout didn't persist")
+    tap(nodes, "Layout")
+    nodes = visible("Reset", "layout-reset")
+    tap(nodes, "Reset")
+    visible("A different kind of mobile.", "layout-restored")
+    screenshot("08-layout-restored")
+
+def home_role_roundtrip():
+    role = "android.app.role.HOME"
+    before = adb("shell", "cmd", "role", "get-role-holders", role)
+    original = re.findall(r"[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+", before)
+    demand(len(original) == 1 and original[0] != PKG,
+           "Need exactly one pre-existing stock HOME package before changing role: " + before)
+    original_pkg = original[0]
+    ROLE_EVIDENCE["originalPackage"] = original_pkg
+    resolve_before = adb("shell", "cmd", "package", "resolve-activity", "--brief",
+                         "-a", "android.intent.action.MAIN",
+                         "-c", "android.intent.category.HOME")
+    original_component = next((line.strip() for line in reversed(resolve_before.splitlines())
+                               if line.strip().startswith(original_pkg + "/")), None)
+    demand(original_component is not None,
+           "Could not capture the exact original Home component for restoration: " + resolve_before)
+    try:
+        ROLE_EVIDENCE["attempted"] = True
+        adb("shell", "cmd", "package", "set-home-activity", COMPONENT)
+        changed = adb("shell", "cmd", "role", "get-role-holders", role)
+        demand(PKG in changed, "PhiOS Mobile was not assigned HOME role: " + changed)
+        adb("shell", "input", "keyevent", "KEYCODE_HOME")
+        visible("PHIOS MOBILE", "home-role-switched")
+        screenshot("09-phi-default-home")
+    finally:
+        try:
+            adb("shell", "cmd", "role", "add-role-holder", role, original_pkg)
+        except RuntimeError as error:
+            print("Role restoration attempt failed; trying original component:", error, flush=True)
+        current = adb("shell", "cmd", "role", "get-role-holders", role, check=False)
+        if original_pkg not in current or PKG in current:
+            adb("shell", "cmd", "package", "set-home-activity", original_component)
+        restored = adb("shell", "cmd", "role", "get-role-holders", role)
+        ROLE_EVIDENCE["restored"] = original_pkg in restored and PKG not in restored
+        demand(ROLE_EVIDENCE["restored"], "Original default HOME was not restored: " + restored)
+        adb("shell", "input", "keyevent", "KEYCODE_HOME")
+        screenshot("10-stock-home-restored")
+
 def evidence():
     try:
         screenshot("99-final")
@@ -168,7 +232,9 @@ def evidence():
         "model": adb("shell", "getprop", "ro.product.model", check=False).strip(),
         "fingerprint": adb("shell", "getprop", "ro.build.fingerprint", check=False).strip(),
         "apkSha256": hashlib.sha256(APK.read_bytes()).hexdigest() if APK.exists() else None,
-        "defaultHomeChanged": False,
+        "defaultHomeChanged": ROLE_EVIDENCE["attempted"],
+        "defaultHomeRestored": ROLE_EVIDENCE["restored"],
+        "originalHomePackage": ROLE_EVIDENCE["originalPackage"],
         "physicalDeviceTested": False,
         "tests": RESULTS,
         "outcome": "FAIL" if any(t["result"] == "FAIL" for t in RESULTS) else "PASS",
@@ -187,6 +253,8 @@ def main():
             ("Exercise PhiSurf and status", surf_status),
             ("Filter installed apps", search),
             ("Pin app and verify persistence", pin),
+            ("Home layout survives restart and reset", layout_preferences),
+            ("Temporarily select PhiOS HOME and restore stock HOME", home_role_roundtrip),
         ]:
             step(name, fn)
     except Exception:
