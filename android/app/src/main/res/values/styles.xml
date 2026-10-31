@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <style name="PhiOSTheme" parent="android:style/Theme.Material.NoActionBar">
+    <item name="android:fontFamily">sans</item>
+    <item name="android:windowLightStatusBar">false</item>
+    <item name="android:statusBarColor">#0A1220</item>
+    <item name="android:navigationBarColor">#0A1220</item>
+    <item name="android:windowActionModeOverlay">true</item>
+    <item name="android:colorAccent">#79E8EB</item>
+    <item name="android:windowLightNavigationBar">false</item>
+  </style>
+</resources>

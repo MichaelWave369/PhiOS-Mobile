@@ -4,6 +4,16 @@
 
 PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1.1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
 
+## Rung 2: Android native launcher preview
+
+The `android/` subproject is a separate, user-selectable **Android HOME app**. It discovers and opens current-user launchable apps through Android LauncherApps, supports local pinned shortcuts and native PhiSurf, and provides a way to return to the original default Home. This is **not a new Android OS**, custom ROM, or daily-driver qualified launcher.
+
+- Build and test with `gradle --no-daemon -p android :app:assembleDebug :app:testDebugUnitTest`
+- GitHub's Android workflow uploads a short-lived **debug test APK** when successful.
+- Do not select as your default Home on your only phone before emulator/spare-device testing.
+- Native pins and the browser Notes/Vault remain separate. No permission to view notifications or control radios is requested.
+- See [native build and rollback instructions](android/README.md) and [device qualification checklist](docs/ANDROID_NATIVE_CHECKLIST.md).
+
 ## Rung 1.1: The living shell
 
 - Smooth directional screen transitions, respecting reduced-motion preferences

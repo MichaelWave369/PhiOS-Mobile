@@ -12,7 +12,7 @@
 - [ ] Prove offline reload after installation on actual target browser
 - [ ] Enable and verify GitHub Pages deployment
 
-## Rung 1.1: Living touch shell (this PR)
+## Rung 1.1: Living touch shell (merged)
 - [x] Directional transitions and hidden scrollbar with scroll padding
 - [x] Home customization with rearrangeable shortcuts, list/grid mode and optional panels
 - [x] Browser-local quick settings drawer and constrained edge gestures
@@ -22,7 +22,23 @@
 - [ ] Manual real-device viewport, pointer gesture, keyboard and screen reader validation
 - [ ] Verify offline reload after the service worker cache update
 
-## Rung 2: Android launcher prototype
+## Rung 2: Android launcher prototype (native preview PR)
+- [x] Native Android HOME and LAUNCHER activities in a separate app subproject
+- [x] LauncherApps current-user discovery, app search and app launch
+- [x] Local pinned apps and real native PhiSurf dial with accessible fallback buttons
+- [x] Open system settings and original/default-home settings without touching firmware
+- [x] Android CI APK/test workflow and explicit physical/emulator qualification plan
+- [ ] Native CI build and JUnit test pass
+- [ ] Emulator launcher/default-home/revert smoke test
+- [ ] Physical spare-device verification and accessibility qualification
+- [ ] Optional notification integration, consent and permission checks (later rung)
+
+## Rung 2.1: Android native UX
+- Bring configurable native layouts, home/widgets and proper notification UX behind explicit user consent
+- Add reproducible APK provenance and signed release track
+- Keep PhiOS PWA and native launcher state separate until schema/consent sync is engineered
+
+## Rung 3: Device-targeted AOSP image
 - Make an Android application that can be selected as the device launcher.
 - Implement native app discovery, system intents, and notifications using user-granted Android APIs, not simulated privileges.
 - Keep launcher packaging separate from AOSP device images.
