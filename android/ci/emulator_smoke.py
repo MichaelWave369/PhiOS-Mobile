@@ -438,12 +438,32 @@ def verify_exported_json(data):
     DOCUMENT_EVIDENCE["schemaVerified"] = True
 
 
+def select_document_filename(nodes, filename):
+    """Return only the visible file title, never DocumentsUI's preview icon.
+
+    The stock API 35 picker exposes a clickable node whose content-desc is
+    'Preview the file NAME' *before* its actual android:id/title filename node.
+    Substring-based tap() opens preview and produces 'Can't open file'.
+    """
+    choices = [
+        node for node in nodes
+        if node.attrib.get("text", "") == filename
+        and node.attrib.get("resource-id", "").endswith(":id/title")
+        and node.attrib.get("class", "") == "android.widget.TextView"
+    ]
+    demand(len(choices) == 1,
+           "Expected exactly one DocumentsUI filename row for " + filename
+           + ", got " + str(len(choices)) + "; refusing preview-icon tap")
+    return choices[0]
+
+
 def import_exported_document(stage):
     open_profile_menu_action("Import from JSON", stage)
     nodes = document_picker_downloads(stage + "-picker")
-    if locate(nodes, DOCUMENT_NAME) is None:
-        nodes = visible(DOCUMENT_NAME, stage + "-file", tries=6)
-    tap(nodes, DOCUMENT_NAME)
+    # Match the *exact* filename text. Avoid the earlier, clickable
+    # 'Preview the file ...' icon, which cannot return a document URI.
+    selected = select_document_filename(nodes, DOCUMENT_NAME)
+    adb("shell", "input", "tap", *coordinates(selected))
     nodes = visible("Preview launcher restore", stage + "-preview", tries=6)
     demand(locate(nodes, "Unavailable apps skipped: 0") is not None,
            "Import preview did not report zero skipped apps")
