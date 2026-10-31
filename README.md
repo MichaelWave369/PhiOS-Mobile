@@ -4,6 +4,10 @@
 
 PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1.1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
 
+## Rung 2.2: Local native profile portability
+
+Android's native launcher includes a user-controlled document-picker backup for pinned apps and layout preferences. JSON import checks schema, size, data types and installed-app availability, and requires a confirmation before restoring. It does **not** touch the Android Home role, app data or the independent PhiOperator/PWA backup.
+
 ## Rung 4: Optional PhiOperator Passport bridge in the web PWA
 
 This browser/PWA preview can import a manually exported PhiOperator Passport v1 JSON in Settings. It uses a pinned local copy of the **canonical, dependency-free portable SDK** from PhiOperator (no network code import), stored independently of the existing Notes/Vault backup. Standard Rank 2 enables an optional animated-free decorative home signal halo. Export and removal are supported, with a blocked-storage session fallback.

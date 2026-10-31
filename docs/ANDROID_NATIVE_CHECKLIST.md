@@ -64,3 +64,13 @@ Use [the native launcher README](../android/README.md) for installation and scop
 The emulator workflow runs for **pull requests** and for **post-merge pushes to main**. It can also be run manually from GitHub Actions. Feature-branch pushes do not launch a second duplicate emulator job when a pull request is already running. This avoids concurrency cancellation of one run by the other.
 
 Check the exact pull-request HEAD SHA for the pre-merge gate and the main merge SHA for the post-merge gate. A cancelled superseded run is not a successful or failed emulator test, and all required completed runs still must pass before device qualification claims.
+
+## Rung 2.2: Portable settings test gate
+- [ ] Export a local JSON document and inspect its four layout flags and pins
+- [ ] Import that document into a clean launcher install and verify restoration
+- [ ] Confirm unavailable pins are skipped, not installed
+- [ ] Cancel the confirmation and verify existing preferences stay unchanged
+- [ ] Reject bad UTF-8, unknown schema/version, duplicate IDs, invalid types and overlarge files
+- [ ] Confirm Android default Home role remains unchanged
+- [ ] Verify no new Android app/storage/network permission and no PWA/Passport migration
+- [ ] Check document-picker provider behavior on emulator and spare device

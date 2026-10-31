@@ -187,14 +187,33 @@ def launch():
                    "PhiOS launcher fatal exception; see startup diagnostics")
             demand(detail["processRunning"],
                    "PhiOS process absent after Android start; see startup diagnostics")
-            demand(not detail["launcherResumed"],
-                   "PhiOS resumed but its UI is missing; see startup diagnostics")
-            if attempt >= 3:
-                raise AssertionError("Android never brought PhiOS to the foreground "
-                                     "after 3 startup attempts; see screenshots and window dumps")
-            STARTUP_EVIDENCE["initialUiDelay"] = True
-            time.sleep(3)
-            continue
+            if detail["launcherResumed"]:
+                # A resumed Activity can precede a usable accessibility tree,
+                # especially during the first Google Play emulator boot.
+                # Observe the SAME foreground activity briefly; never relaunch
+                # or suppress a persistent missing-UI failure.
+                try:
+                    nodes = visible("PHIOS MOBILE", "home-settled-" + str(attempt), tries=7)
+                    STARTUP_EVIDENCE["initialUiDelay"] = True
+                    STARTUP_EVIDENCE["settledAfterResumed"] = True
+                except AssertionError:
+                    hierarchy = xml_snapshot("startup-final-hierarchy-" + str(attempt))
+                    summary = [node_label(n).strip()[:110] for n in hierarchy
+                               if node_label(n).strip()]
+                    (OUT / ("startup-visible-nodes-" + str(attempt) + ".txt")).write_text(
+                        "\n".join(summary[:90]) + "\n"
+                    )
+                    print("STARTUP VISIBLE NODES:", repr(summary[:40]), flush=True)
+                    raise AssertionError("PhiOS remained resumed without visible UI after "
+                                         "the bounded settling window; see activity, window, "
+                                         "hierarchy and screenshot evidence")
+            else:
+                if attempt >= 3:
+                    raise AssertionError("Android never brought PhiOS to the foreground "
+                                         "after 3 startup attempts; see screenshots and window dumps")
+                STARTUP_EVIDENCE["initialUiDelay"] = True
+                time.sleep(3)
+                continue
 
         for expected in ("YOUR APPS", "All apps", "SURF"):
             demand(locate(nodes, expected) is not None,
@@ -324,6 +343,20 @@ def layout_preferences():
     tap(nodes, "Reset")
     visible("A different kind of mobile.", "layout-restored")
     screenshot("08-layout-restored")
+
+def local_backup_controls():
+    # Validate native menu only. Document-provider save/open is a separate gate.
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("Backup", "profile-before")
+    tap(nodes, "Backup")
+    nodes = visible("Local backup & restore", "profile-menu")
+    demand(locate(nodes, "Export to JSON") is not None, "Export action is missing")
+    demand(locate(nodes, "Import from JSON") is not None, "Import action is missing")
+    screenshot("08-profile-menu")
+    tap(nodes, "Close")
+    visible("PHIOS MOBILE", "profile-closed")
+
 
 def role_holders(output):
     """Parse only Android package names; empty output is a valid unassigned role."""
@@ -481,6 +514,7 @@ def main():
             ("Pin app and verify persistence", pin),
             ("Launch real Android fixture from list and pinned shelf", real_app_launch_and_shelf),
             ("Home layout survives restart and reset", layout_preferences),
+            ("Local profile backup and restore controls", local_backup_controls),
             ("Temporarily select PhiOS HOME and restore stock HOME", home_role_roundtrip),
         ]:
             step(name, fn)

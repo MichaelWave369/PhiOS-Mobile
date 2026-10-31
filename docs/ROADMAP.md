@@ -51,6 +51,17 @@ All statuses below describe narrow engineering evidence. CI compile success does
 - [ ] Review real emulator screenshots, focus and viewport clipping
 - [ ] Physical spare-device and screen-reader qualification remain pending
 
+## Rung 2.2: Sovereign native profile backup (this PR)
+- [x] Add versioned JSON profile for pinned apps and four native Home layout flags
+- [x] Export/import through Android's document picker without new permissions
+- [x] Strict UTF-8, version, schema, field and component-key validation; 64 KiB limit
+- [x] Skip unavailable apps; preview and require confirmation before replacing settings
+- [x] Keep Android default Home role, other app data and the PWA vault untouched
+- [x] JVM codec security/round-trip tests and emulator backup-menu smoke
+- [ ] Verify CI and inspect actual emulator menu screenshot
+- [ ] Test full document-provider file round trip and screen-reader interaction
+- [ ] Test a specifically named spare physical device
+
 ## Rung 2.1: Native UX and explicit optional capabilities
 - Enhance native home layout, widgets, shortcuts and bounded quick controls
 - Consider notification access only with independent opt-in and revoke instructions
