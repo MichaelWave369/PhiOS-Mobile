@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.net.Uri;
 import android.content.SharedPreferences;
 import android.content.pm.LauncherActivityInfo;
 import android.content.pm.LauncherApps;
@@ -28,12 +29,18 @@ import android.widget.TextClock;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 /**
@@ -50,6 +57,8 @@ public final class MainActivity extends Activity {
     private static final int MUTED = Color.rgb(153, 175, 195);
     private static final String PREFS = "phios-native-launcher-v1";
     private static final String PINNED = "pinned";
+    private static final int EXPORT_PROFILE_REQUEST = 4101;
+    private static final int IMPORT_PROFILE_REQUEST = 4102;
     private LauncherApps launcherApps;
     private SharedPreferences preferences;
     private Set<String> pinned = new HashSet<>();
@@ -138,7 +147,7 @@ public final class MainActivity extends Activity {
         identity.setPadding(dp(10), 0, 0, 0);
         identity.setOrientation(LinearLayout.VERTICAL);
         identity.addView(text("PHIOS MOBILE", 19, TEXT, true));
-        identity.addView(text("NATIVE LAUNCHER · RUNG 2.1B", 10, MUTED, true));
+        identity.addView(text("NATIVE LAUNCHER · RUNG 2.2", 10, MUTED, true));
         header.addView(identity, new LinearLayout.LayoutParams(0, -2, 1));
         header.addView(button("✳ SURF", this::openSurf));
         root.addView(header);
@@ -258,9 +267,14 @@ public final class MainActivity extends Activity {
         emptyView.setPadding(dp(12), dp(16), dp(12), dp(16));
         appList.addView(emptyView);
 
-        TextView footnote = text("Long-press an app to pin it. To switch back: Settings → Apps → Default apps → Home app.", 10, MUTED, false);
-        footnote.setPadding(0, dp(10), 0, 0);
-        root.addView(footnote);
+        LinearLayout footer = new LinearLayout(this);
+        footer.setGravity(Gravity.CENTER_VERTICAL);
+        TextView footnote = text("Hold an app to pin it. Default Home: Settings → Apps → Default apps.", 10, MUTED, false);
+        footnote.setPadding(0, dp(8), dp(6), 0);
+        footer.addView(footnote, new LinearLayout.LayoutParams(0, -2, 1));
+        footer.addView(button("Backup", this::openBackupMenu),
+                new LinearLayout.LayoutParams(dp(90), dp(48)));
+        root.addView(footer);
         setContentView(root);
         applyHomeLayout();
     }
@@ -497,6 +511,150 @@ public final class MainActivity extends Activity {
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private Map<String, Boolean> currentLayoutSettings() {
+        Map<String, Boolean> result = new LinkedHashMap<>();
+        for (int i = 0; i < LauncherProfileCodec.LAYOUT_KEYS.length; i++) {
+            result.put(LauncherProfileCodec.LAYOUT_KEYS[i],
+                    preferences.getBoolean(LauncherProfileCodec.LAYOUT_KEYS[i],
+                            LauncherProfileCodec.LAYOUT_DEFAULTS[i]));
+        }
+        return result;
+    }
+
+    private void openBackupMenu() {
+        String[] options = {"Export to JSON", "Import from JSON"};
+        new AlertDialog.Builder(this)
+                .setTitle("Local backup & restore")
+                .setMessage("Save your pinned apps and Home layout to a document you choose. "
+                        + "No account or internet permission is needed. "
+                        + "The chosen document provider may offer cloud storage, so select local "
+                        + "storage if you want the file kept entirely on-device. "
+                        + "Import previews changes before replacing your current settings.")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) beginExportProfile();
+                    else beginImportProfile();
+                })
+                .setNegativeButton("Close", null)
+                .show();
+    }
+
+    private void beginExportProfile() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        intent.putExtra(Intent.EXTRA_TITLE, "phios-launcher-profile-v1.json");
+        try {
+            startActivityForResult(intent, EXPORT_PROFILE_REQUEST);
+        } catch (ActivityNotFoundException error) {
+            Toast.makeText(this, "No document provider is available to export settings.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void beginImportProfile() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        try {
+            startActivityForResult(intent, IMPORT_PROFILE_REQUEST);
+        } catch (ActivityNotFoundException error) {
+            Toast.makeText(this, "No document provider is available to import settings.",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != EXPORT_PROFILE_REQUEST && requestCode != IMPORT_PROFILE_REQUEST)
+            return;
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        Uri document = data.getData();
+        // The system picker grants scoped access to a single selected document.
+        // No storage or broad file-access permission is requested or retained.
+        if (!"content".equals(document.getScheme())) {
+            Toast.makeText(this, "Only document-provider files are supported.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (requestCode == EXPORT_PROFILE_REQUEST) exportProfile(document);
+        else importProfile(document);
+    }
+
+    private void exportProfile(Uri document) {
+        try {
+            String json = LauncherProfileCodec.encode(new HashSet<>(pinned), currentLayoutSettings());
+            try (OutputStream out = getContentResolver().openOutputStream(document, "wt")) {
+                if (out == null) throw new java.io.IOException("Document provider refused a write stream.");
+                out.write(json.getBytes(StandardCharsets.UTF_8));
+                out.flush();
+            }
+            Toast.makeText(this, "Launcher settings exported to your chosen file.",
+                    Toast.LENGTH_LONG).show();
+        } catch (Exception error) {
+            showBackupError("Export failed", error);
+        }
+    }
+
+    private byte[] readBoundedDocument(Uri document) throws java.io.IOException {
+        try (InputStream stream = getContentResolver().openInputStream(document)) {
+            if (stream == null) throw new java.io.IOException("Document provider returned no file.");
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            int count;
+            while ((count = stream.read(buffer)) != -1) {
+                if (bytes.size() + count > LauncherProfileCodec.MAX_BYTES)
+                    throw new java.io.IOException("Profile exceeds the 64 KiB safety limit.");
+                bytes.write(buffer, 0, count);
+            }
+            return bytes.toByteArray();
+        }
+    }
+
+    private void importProfile(Uri document) {
+        try {
+            byte[] file = readBoundedDocument(document);
+            Set<String> currentApps = new HashSet<>();
+            for (LauncherActivityInfo info : installed)
+                currentApps.add(info.getComponentName().flattenToString());
+            LauncherProfileCodec.Preview preview = LauncherProfileCodec.decode(file, currentApps);
+            String message = "Available pinned apps: " + preview.availablePins.size()
+                    + "\nUnavailable apps skipped: " + preview.skippedUnavailable
+                    + "\nLayout settings: 4"
+                    + "\n\nRestore will REPLACE your existing pins and layout only. "
+                    + "It will not install apps, change Android's default Home, or access app data.";
+            new AlertDialog.Builder(this)
+                    .setTitle("Preview launcher restore")
+                    .setMessage(message)
+                    .setPositiveButton("Restore", (dialog, which) -> applyImportedProfile(preview))
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        } catch (Exception error) {
+            showBackupError("Import rejected", error);
+        }
+    }
+
+    private void applyImportedProfile(LauncherProfileCodec.Preview preview) {
+        SharedPreferences.Editor editor = preferences.edit()
+                .putStringSet(PINNED, new HashSet<>(preview.availablePins));
+        for (Map.Entry<String, Boolean> setting : preview.layout.entrySet())
+            editor.putBoolean(setting.getKey(), setting.getValue());
+        if (!editor.commit()) {
+            Toast.makeText(this, "Couldn't save restored settings. Existing settings retained.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        pinned = new HashSet<>(preview.availablePins);
+        applyHomeLayout();
+        renderApps();
+        Toast.makeText(this, "Launcher profile restored locally.", Toast.LENGTH_LONG).show();
+    }
+
+    private void showBackupError(String message, Exception error) {
+        String detail = error.getMessage() == null ? "Unknown document error" : error.getMessage();
+        if (detail.length() > 150) detail = detail.substring(0, 150);
+        Toast.makeText(this, message + ": " + detail, Toast.LENGTH_LONG).show();
     }
 
     private void openSettings() {

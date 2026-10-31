@@ -6,6 +6,16 @@
 
 The API 35 emulator smoke test now distinguishes first-boot focus delays from genuine PhiOS launcher failures. It wakes the disposable emulator, retries only when PhiOS remains running but is not the resumed foreground Activity, and records Android activity/window diagnostics, screenshots, launcher startup attempts and an APK-identified JSON receipt. A crash, terminated process or resumed launcher without its UI **fails immediately**. It does not hide runtime failures or change physical device behavior.
 
+## Rung 2.2: Native launcher profile export and restore
+
+The **Backup** button on the native Android Home opens **Export to JSON** and **Import from JSON** using the OS document picker. PhiOS does not need an Internet, storage, account, or all-packages permission. The user chooses the destination; a document provider *can* be cloud-backed, so choose on-device storage when local-only retention matters.
+
+The versioned JSON contains only pinned launcher component identifiers and four Home layout switches: `show_clock`, `show_hero`, `compact_rows`, `show_shelf`. It contains no app data, other app inventory, notes, accounts, device identifiers, or system Home preferences. The PWA/PhiOperator backup remains separate.
+
+Imported documents have a 64 KiB hard cap and at most 256 pinned IDs. The codec checks schema/version, field types, valid UTF-8, duplicate IDs, and component identifier format. IDs for apps not installed on the receiving device are **skipped**, never installed or launched. A confirmation preview shows what will be restored, and cancelling leaves the current settings unchanged. Restoration updates only the existing native pins and layout.
+
+The JSON codec has JVM regression tests, and emulator CI verifies the native menu exists. A full OS-document-provider save/open round trip, screen-reader qualification and spare physical-device testing remain pending.
+
 ## Rung 2.1b: Pinned Shelf and real launch proof
 
 - A native scrollable **Pinned Shelf** above the app list, populated only from installed launcher activities that the user has pinned

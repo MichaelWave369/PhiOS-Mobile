@@ -325,6 +325,20 @@ def layout_preferences():
     visible("A different kind of mobile.", "layout-restored")
     screenshot("08-layout-restored")
 
+def local_backup_controls():
+    # Validate native menu only. Document-provider save/open is a separate gate.
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("Backup", "profile-before")
+    tap(nodes, "Backup")
+    nodes = visible("Local backup & restore", "profile-menu")
+    demand(locate(nodes, "Export to JSON") is not None, "Export action is missing")
+    demand(locate(nodes, "Import from JSON") is not None, "Import action is missing")
+    screenshot("08-profile-menu")
+    tap(nodes, "Close")
+    visible("PHIOS MOBILE", "profile-closed")
+
+
 def role_holders(output):
     """Parse only Android package names; empty output is a valid unassigned role."""
     return re.findall(r"[A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)+", output)
@@ -481,6 +495,7 @@ def main():
             ("Pin app and verify persistence", pin),
             ("Launch real Android fixture from list and pinned shelf", real_app_launch_and_shelf),
             ("Home layout survives restart and reset", layout_preferences),
+            ("Local profile backup and restore controls", local_backup_controls),
             ("Temporarily select PhiOS HOME and restore stock HOME", home_role_roundtrip),
         ]:
             step(name, fn)
