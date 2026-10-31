@@ -178,6 +178,22 @@ def pin():
     screenshot("06-pinned-filter")
 
 
+def wait_for_fixture(stage):
+    try:
+        return visible("PHIOS CI TARGET LIVE", stage, tries=8)
+    except Exception:
+        activity = adb("shell", "dumpsys", "activity", "activities", check=False)
+        logcat = adb("logcat", "-d", "-t", "900", check=False)
+        (OUT / (stage + "-activity.txt")).write_text(activity[-30000:])
+        (OUT / (stage + "-logcat.txt")).write_text(logcat[-120000:])
+        relevant = [line for line in logcat.splitlines()
+                    if any(key in line for key in
+                           ("AndroidRuntime", "FATAL EXCEPTION", "phiosmobile",
+                            "ActivityTaskManager", "SecurityException", "START u0"))]
+        print("ANDROID LAUNCH DIAGNOSTICS:\n" + "\n".join(relevant[-90:]), flush=True)
+        raise
+
+
 def real_app_launch_and_shelf():
     # A deterministic launchable Android APK is installed with the emulator
     # workflow. This verifies the launcher actually opens *another* app, not
@@ -197,7 +213,7 @@ def real_app_launch_and_shelf():
 
     # Launch from the real installed-app list.
     tap(nodes, "Tap to open")
-    visible("PHIOS CI TARGET LIVE", "fixture-launched-list")
+    wait_for_fixture("fixture-launched-list")
     screenshot("06c-real-app-launched-from-list")
 
     adb("shell", "am", "force-stop", PKG)
@@ -213,7 +229,7 @@ def real_app_launch_and_shelf():
 
     # Tap the pinned shelf, not an ordinary app row.
     tap(nodes, "Open PhiOS CI Target from pinned shelf")
-    visible("PHIOS CI TARGET LIVE", "fixture-launched-shelf")
+    wait_for_fixture("fixture-launched-shelf")
     screenshot("06e-real-app-launched-from-shelf")
     adb("shell", "am", "force-stop", PKG)
     adb("shell", "am", "start", "-W", "-n", COMPONENT)

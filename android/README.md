@@ -12,6 +12,8 @@
 - Emulator smoke tests for actual app launch **from the installed-app list and the pinned shelf** and returning to the PhiOS launcher
 - The `fixture` APK is never shipped inside the launcher APK and is not uploaded as a deliverable
 
+Installed activities launch through the Android `LauncherApps` API when permitted; if the platform gates that API for a non-default launcher, ΦOS falls back to a standard explicit `ACTION_MAIN` / `CATEGORY_LAUNCHER` intent for that same current-user app activity. Failures remain visible to the user. No broad app, notification or phone permission is requested.
+
 No Android notification, Internet, SMS, call, or system-setting privileges were added. The stock Home recovery test remains mandatory.
 
 ## Rung 2.1 additions
