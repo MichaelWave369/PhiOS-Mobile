@@ -6,6 +6,12 @@
 
 The API 35 emulator smoke test now distinguishes first-boot focus delays from genuine PhiOS launcher failures. It wakes the disposable emulator, retries only when PhiOS remains running but is not the resumed foreground Activity, and records Android activity/window diagnostics, screenshots, launcher startup attempts and an APK-identified JSON receipt. A crash, terminated process or resumed launcher without its UI **fails immediately**. It does not hide runtime failures or change physical device behavior.
 
+## Rung 2.3: Real Android document-provider round trip
+
+The API 35 emulator smoke now tests more than backup-menu visibility. In a **disposable CI virtual device** it navigates the actual Android DocumentsUI picker, saves a JSON launcher profile to Downloads, reads the exported bytes, validates the schema/layout/installed app pin, unpins a test app and hides the Home welcome card, opens the saved document through the system picker, cancels once and verifies state is untouched, then confirms import and verifies pins/layout survive force-stop/restart. Screenshots, XML UI trees, picker failures, a file copy and a JSON receipt accompany the existing smoke evidence.
+
+This is a **single emulator image/provider integration qualification**, not a blanket claim across Android versions, document providers, OEM file pickers or physical phones. It does not change the app's permissions, storage architecture, backup format, or export destination choices. A user can still choose a cloud-backed document provider; on-device storage is recommended for a fully local file.
+
 ## Rung 2.2: Native launcher profile export and restore
 
 The **Backup** button on the native Android Home opens **Export to JSON** and **Import from JSON** using the OS document picker. PhiOS does not need an Internet, storage, account, or all-packages permission. The user chooses the destination; a document provider *can* be cloud-backed, so choose on-device storage when local-only retention matters.

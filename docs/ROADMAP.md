@@ -62,6 +62,16 @@ All statuses below describe narrow engineering evidence. CI compile success does
 - [ ] Test full document-provider file round trip and screen-reader interaction
 - [ ] Test a specifically named spare physical device
 
+## Rung 2.3: Document provider integration verification (this PR)
+- [x] Test native export through the real Android ACTION_CREATE_DOCUMENT picker
+- [x] Read saved local JSON document and validate exact portable schema and pinned test app
+- [x] Modify native pins/layout and test cancelled import leaves settings unchanged
+- [x] Confirm import through ACTION_OPEN_DOCUMENT restores pins/layout after process restart
+- [x] Preserve default Home restoration, fixture launch and permission gates
+- [ ] PR green emulator run and review actual exported JSON and screenshots
+- [ ] Confirm post-merge emulator CI and physically test a spare device
+- [ ] Test alternate document providers, accessibility and malformed-file import UI
+
 ## Rung 2.1: Native UX and explicit optional capabilities
 - Enhance native home layout, widgets, shortcuts and bounded quick controls
 - Consider notification access only with independent opt-in and revoke instructions

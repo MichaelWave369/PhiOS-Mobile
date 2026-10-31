@@ -23,7 +23,7 @@ FIXTURE_PKG = "org.enterthefield.phiosmobile.citarget"
 PKG = "org.enterthefield.phiosmobile"
 COMPONENT = PKG + "/.MainActivity"
 RESULTS = []
-STARTUP_EVIDENCE = {"attempts": 0, "initialUiDelay": False, "classification": None}
+STARTUP_EVIDENCE = {"attempts": 0, "initialUiDelay": False, "classification": None, "stockPixelLauncherAnrDismissed": False}
 ROLE_EVIDENCE = {
     "attempted": False, "restored": False, "originalPackage": None,
     "initialRoleHolders": [], "stockPackage": None, "stockComponent": None,
@@ -144,6 +144,55 @@ def launcher_has_foreground(activity):
                for line in activity.splitlines())
 
 
+def stock_launcher_anr_close_button(nodes, window_dump):
+    """Recognize only the Android-owned Pixel Launcher ANR system overlay.
+
+    Require the exact system UI title/button and either a focused Pixel
+    Launcher ANR window, or its visibly drawn SYSTEM_ALERT window (Android 15
+    sometimes omits mFocusedWindow from dumpsys window windows). Never
+    recover a PhiOS app ANR or an unrelated app's alert.
+    """
+    focused = any(
+        re.search(r"mFocusedWindow=.*Application Not Responding:\s*"
+                  r"com\.google\.android\.apps\.nexuslauncher(?:\s|}|$)", line)
+        for line in window_dump.splitlines()
+    )
+    blocks = re.split(r"(?=^[ \t]*Window #\d+[ \t]+Window\{)", window_dump, flags=re.M)
+    visible_stock_alert = False
+    for block in blocks:
+        first = block.splitlines()[0].strip() if block.strip() else ""
+        if not re.fullmatch(
+            r"Window #\d+ Window\{[^\n]*Application Not Responding: "
+            r"com\.google\.android\.apps\.nexuslauncher\}:",
+            first,
+        ):
+            continue
+        if (re.search(r"\bmOwnerUid=1000\b", block)
+                and re.search(r"\bpackage=android\b", block)
+                and "ty=SYSTEM_ALERT" in block
+                and "Surface: shown=true" in block
+                and "isOnScreen=true" in block
+                and "isVisible=true" in block):
+            visible_stock_alert = True
+            break
+    if not (focused or visible_stock_alert):
+        return None
+    title = any(n.attrib.get("text", "") == "Pixel Launcher isn't responding"
+                and n.attrib.get("resource-id", "") == "android:id/alertTitle"
+                for n in nodes)
+    if not title:
+        return None
+    candidates = [
+        n for n in nodes
+        if n.attrib.get("text", "") == "Close app"
+        and n.attrib.get("resource-id", "") == "android:id/aerr_close"
+        and n.attrib.get("class", "") == "android.widget.Button"
+        and n.attrib.get("package", "") == "android"
+    ]
+    return candidates[0] if len(candidates) == 1 else None
+
+
+
 def startup_diagnostics(attempt):
     """Capture enough evidence to distinguish a wrong foreground from a crash."""
     activity = adb("shell", "dumpsys", "activity", "activities", check=False)
@@ -188,10 +237,22 @@ def launch():
             demand(detail["processRunning"],
                    "PhiOS process absent after Android start; see startup diagnostics")
             if detail["launcherResumed"]:
-                # A resumed Activity can precede a usable accessibility tree,
-                # especially during the first Google Play emulator boot.
-                # Observe the SAME foreground activity briefly; never relaunch
-                # or suppress a persistent missing-UI failure.
+                # A stock Pixel Launcher crash/ANR can present a SYSTEM dialog
+                # over an otherwise running PhiOS activity. Confirm both the
+                # system overlay and exact focused stock-launcher package.
+                # This is only a disposable emulator, never a user's phone.
+                current_nodes = xml_snapshot("home-overlay-check-" + str(attempt))
+                window_dump = (OUT / ("startup-attempt-" + str(attempt)
+                                     + "-windows.txt")).read_text()
+                close_stock = stock_launcher_anr_close_button(current_nodes, window_dump)
+                if close_stock is not None:
+                    screenshot("stock-pixel-launcher-anr-" + str(attempt))
+                    adb("shell", "input", "tap", *coordinates(close_stock))
+                    STARTUP_EVIDENCE["stockPixelLauncherAnrDismissed"] = True
+                    print("DISMISSED verified stock Pixel Launcher ANR overlay", flush=True)
+                    time.sleep(2)
+                # A resumed Activity can also precede a usable accessibility
+                # tree. Observe the SAME PhiOS instance, without relaunching.
                 try:
                     nodes = visible("PHIOS MOBILE", "home-settled-" + str(attempt), tries=7)
                     STARTUP_EVIDENCE["initialUiDelay"] = True
@@ -358,6 +419,194 @@ def local_backup_controls():
     visible("PHIOS MOBILE", "profile-closed")
 
 
+
+DOCUMENT_NAME = "phios-launcher-profile-v1.json"
+DOCUMENT_EXPECTED_PATHS = (
+    "/sdcard/Download/" + DOCUMENT_NAME,
+    "/sdcard/Documents/" + DOCUMENT_NAME,
+)
+DOCUMENT_EVIDENCE = {
+    "exported": False, "schemaVerified": False,
+    "importPreviewCancelled": False, "restored": False,
+    "providerPath": None,
+}
+
+def document_picker_downloads(stage):
+    """Use the emulator's real Android DocumentsUI, never a fabricated URI."""
+    nodes = xml_snapshot(stage + "-roots")
+    if locate(nodes, "Downloads") is None:
+        drawer = next((n for n in nodes if any(word in node_label(n).casefold()
+                      for word in ("show roots", "open navigation drawer", "show navigation"))), None)
+        demand(drawer is not None,
+               "System document picker has no Downloads and no navigation drawer. "
+               "Inspect " + stage + "-roots UI XML.")
+        adb("shell", "input", "tap", *coordinates(drawer))
+        nodes = visible("Downloads", stage + "-drawer", tries=6)
+    tap(nodes, "Downloads")
+    return xml_snapshot(stage + "-downloads")
+
+
+def open_profile_menu_action(action, stage):
+    nodes = visible("PHIOS MOBILE", stage + "-launcher", tries=6)
+    nodes = visible("Backup", stage + "-backup", tries=6)
+    tap(nodes, "Backup")
+    nodes = visible("Local backup & restore", stage + "-menu")
+    tap(nodes, action)
+
+
+def read_emulator_export():
+    for path in DOCUMENT_EXPECTED_PATHS:
+        output = adb("shell", "ls", path, check=False)
+        if "No such file" in output or "cannot access" in output:
+            continue
+        candidate = OUT / ("export-" + DOCUMENT_NAME)
+        try:
+            adb("pull", path, str(candidate), timeout=40)
+            data = candidate.read_bytes()
+            if data:
+                DOCUMENT_EVIDENCE["providerPath"] = path
+                return data
+        except Exception:
+            pass
+    directory = adb("shell", "ls", "-la", "/sdcard/Download", check=False)
+    (OUT / "documentsui-download-dir.txt").write_text(directory)
+    raise AssertionError("Document picker returned but the expected local file "
+                         "could not be read from Downloads/Documents. See evidence.")
+
+
+def verify_exported_json(data):
+    demand(len(data) <= 65536, "Exported profile exceeds 64 KiB")
+    try:
+        profile = json.loads(data.decode("utf-8", "strict"))
+    except (ValueError, UnicodeDecodeError) as error:
+        raise AssertionError("Export isn't valid strict UTF-8 JSON: " + str(error))
+    demand(set(profile) == {"schema", "version", "pinned", "layout"},
+           "Exported profile has unexpected root fields")
+    demand(profile["schema"] == "org.enterthefield.phiosmobile.launcher-profile",
+           "Exported schema mismatch")
+    demand(type(profile["version"]) is int and profile["version"] == 1,
+           "Exported profile version mismatch")
+    demand(isinstance(profile["pinned"], list)
+           and any(str(key).startswith(FIXTURE_PKG + "/")
+                   for key in profile["pinned"]), "Export missing the pinned CI fixture")
+    expected_layout = {"show_clock", "show_hero", "compact_rows", "show_shelf"}
+    demand(set(profile["layout"]) == expected_layout,
+           "Exported profile layout keys mismatch")
+    demand(all(type(v) is bool for v in profile["layout"].values()),
+           "Exported layout must contain booleans")
+    demand(profile["layout"]["show_hero"] is True,
+           "Expected the hero enabled before export")
+    DOCUMENT_EVIDENCE["schemaVerified"] = True
+
+
+def select_document_filename(nodes, filename):
+    """Return only the visible file title, never DocumentsUI's preview icon.
+
+    The stock API 35 picker exposes a clickable node whose content-desc is
+    'Preview the file NAME' *before* its actual android:id/title filename node.
+    Substring-based tap() opens preview and produces 'Can't open file'.
+    """
+    choices = [
+        node for node in nodes
+        if node.attrib.get("text", "") == filename
+        and node.attrib.get("resource-id", "").endswith(":id/title")
+        and node.attrib.get("class", "") == "android.widget.TextView"
+    ]
+    demand(len(choices) == 1,
+           "Expected exactly one DocumentsUI filename row for " + filename
+           + ", got " + str(len(choices)) + "; refusing preview-icon tap")
+    return choices[0]
+
+
+def select_dialog_button(nodes, label):
+    """Select a dialog action, not a title or explanatory string containing it."""
+    choices = [
+        node for node in nodes
+        if node.attrib.get("class", "") == "android.widget.Button"
+        and node.attrib.get("text", "").strip().casefold() == label.casefold()
+    ]
+    demand(len(choices) == 1,
+           "Expected exactly one dialog button '" + label
+           + "', got " + str(len(choices)))
+    return choices[0]
+
+
+def import_exported_document(stage):
+    open_profile_menu_action("Import from JSON", stage)
+    nodes = document_picker_downloads(stage + "-picker")
+    # Match the *exact* filename text. Avoid the earlier, clickable
+    # 'Preview the file ...' icon, which cannot return a document URI.
+    selected = select_document_filename(nodes, DOCUMENT_NAME)
+    adb("shell", "input", "tap", *coordinates(selected))
+    nodes = visible("Preview launcher restore", stage + "-preview", tries=6)
+    demand(locate(nodes, "Unavailable apps skipped: 0") is not None,
+           "Import preview did not report zero skipped apps")
+    return nodes
+
+
+def document_provider_roundtrip():
+    """Export through real system picker, cancel then confirm verified import.
+
+    No account, content provider privileged access, or Home role modification.
+    This test runs only inside the disposable GitHub Actions virtual phone.
+    """
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    visible("Open PhiOS CI Target from pinned shelf", "document-precondition")
+    visible("A different kind of mobile.", "document-hero-precondition")
+
+    open_profile_menu_action("Export to JSON", "document-export")
+    nodes = document_picker_downloads("document-save")
+    # The Android system chooser supplies the suggested filename.
+    nodes = visible(DOCUMENT_NAME, "document-save-filename", tries=6)
+    screenshot("08a-document-create-picker")
+    demand(locate(nodes, "Save") is not None, "Android document picker has no Save action")
+    tap(nodes, "Save")
+    visible("PHIOS MOBILE", "document-export-return", tries=7)
+    data = read_emulator_export()
+    verify_exported_json(data)
+    DOCUMENT_EVIDENCE["exported"] = True
+    screenshot("08b-document-exported")
+
+    # Change both the saved pin and layout so cancellation/restoration is real.
+    nodes = visible("Open PhiOS CI Target from pinned shelf", "document-unpin-before")
+    x, y = coordinates(locate(nodes, "Open PhiOS CI Target from pinned shelf"))
+    adb("shell", "input", "swipe", x, y, x, y, "1300")
+    nodes = visible("PINNED SHELF", "document-unpin-after")
+    demand(locate(nodes, "Open PhiOS CI Target from pinned shelf") is None,
+           "Fixture was not unpinned before restore")
+    tap(nodes, "Layout")
+    nodes = visible("Show welcome card", "document-hide-hero")
+    tap(nodes, "Show welcome card")
+    tap(visible("Save", "document-save-hero"), "Save")
+    nodes = visible("PHIOS MOBILE", "document-mutated")
+    demand(locate(nodes, "A different kind of mobile.") is None,
+           "Hero wasn't disabled before restore")
+
+    # First import must preview and be cancellable without changing settings.
+    nodes = import_exported_document("document-import-cancel")
+    screenshot("08c-import-preview-cancel")
+    tap(nodes, "Cancel")
+    nodes = visible("PHIOS MOBILE", "document-cancelled")
+    demand(locate(nodes, "A different kind of mobile.") is None,
+           "Cancelling import unexpectedly changed Home layout")
+    demand(locate(nodes, "Open PhiOS CI Target from pinned shelf") is None,
+           "Cancelling import unexpectedly changed pins")
+    DOCUMENT_EVIDENCE["importPreviewCancelled"] = True
+
+    # Import the exact file exported via the DocumentsUI provider.
+    nodes = import_exported_document("document-import-confirm")
+    screenshot("08d-import-preview-confirm")
+    adb("shell", "input", "tap", *coordinates(select_dialog_button(nodes, "Restore")))
+    visible("A different kind of mobile.", "document-restored-hero", tries=7)
+    visible("Open PhiOS CI Target from pinned shelf", "document-restored-pin")
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    visible("A different kind of mobile.", "document-persist-hero")
+    visible("Open PhiOS CI Target from pinned shelf", "document-persist-pin")
+    DOCUMENT_EVIDENCE["restored"] = True
+    screenshot("08e-document-persisted")
+
 def role_holders(output):
     """Parse only Android package names; empty output is a valid unassigned role."""
     return re.findall(r"[A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)+", output)
@@ -481,6 +730,7 @@ def evidence():
     receipt = {
         "scope": "Disposable Android emulator; no physical device qualification",
         "launcherStartup": STARTUP_EVIDENCE,
+        "documentRoundtrip": DOCUMENT_EVIDENCE,
         "apiLevel": adb("shell", "getprop", "ro.build.version.sdk", check=False).strip(),
         "model": adb("shell", "getprop", "ro.product.model", check=False).strip(),
         "fingerprint": adb("shell", "getprop", "ro.build.fingerprint", check=False).strip(),
@@ -515,6 +765,7 @@ def main():
             ("Launch real Android fixture from list and pinned shelf", real_app_launch_and_shelf),
             ("Home layout survives restart and reset", layout_preferences),
             ("Local profile backup and restore controls", local_backup_controls),
+            ("Real DocumentsUI export, cancelled import, confirmed restore and persistence", document_provider_roundtrip),
             ("Temporarily select PhiOS HOME and restore stock HOME", home_role_roundtrip),
         ]:
             step(name, fn)
