@@ -1,6 +1,6 @@
 # PhiOS Mobile: milestone ladder
 
-## Rung 1: Touch shell (this PR)
+## Rung 1: Touch shell (merged)
 - [x] Responsive, touch-friendly browser shell
 - [x] PhiSurf navigation with accessible button alternatives
 - [x] Local notes, preferences, export, and import
@@ -11,6 +11,16 @@
 - [ ] Manual phone-browser and keyboard/screen-reader smoke test
 - [ ] Prove offline reload after installation on actual target browser
 - [ ] Enable and verify GitHub Pages deployment
+
+## Rung 1.1: Living touch shell (this PR)
+- [x] Directional transitions and hidden scrollbar with scroll padding
+- [x] Home customization with rearrangeable shortcuts, list/grid mode and optional panels
+- [x] Browser-local quick settings drawer and constrained edge gestures
+- [x] Drag-sector PhiSurf interaction with tap/keyboard alternatives
+- [x] Schema 1 storage and backup migration tests
+- [ ] CI run for this PR passes
+- [ ] Manual real-device viewport, pointer gesture, keyboard and screen reader validation
+- [ ] Verify offline reload after the service worker cache update
 
 ## Rung 2: Android launcher prototype
 - Make an Android application that can be selected as the device launcher.

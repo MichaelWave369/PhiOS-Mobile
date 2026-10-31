@@ -9,7 +9,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
   <script type="module" src="./src/main.js"></script>
-  <title>ΦOS Mobile | Rung 1</title>
+  <title>ΦOS Mobile | Rung 1.1</title>
 </head>
 <body>
   <div class="background-grid" aria-hidden="true"></div>
@@ -22,15 +22,15 @@
       </header>
 
       <div class="topbar">
-        <div class="brand"><span class="brand-mark">Φ</span><span>PHIOS<span class="brand-light"> MOBILE</span><small>RUNG 01 · SOVEREIGN SHELL</small></span></div>
-        <button type="button" class="circle-action" id="open-surf-top" aria-label="Open PhiSurf quick navigation" aria-haspopup="dialog" aria-controls="phisurf">✳</button>
+        <div class="brand"><span class="brand-mark">Φ</span><span>PHIOS<span class="brand-light"> MOBILE</span><small>RUNG 1.1 · LIVING SHELL</small></span></div>
+        <div class="top-actions"><button type="button" class="circle-action quick-action" id="open-quick" aria-label="Open local quick settings" aria-haspopup="dialog" aria-controls="quick-panel">☷</button><button type="button" class="circle-action" id="open-surf-top" aria-label="Open PhiSurf quick navigation" aria-haspopup="dialog" aria-controls="phisurf">✳</button></div>
       </div>
 
       <div class="screens" id="screens">
         <section class="screen" id="screen-home" data-screen="home" aria-labelledby="home-title">
           <div class="eyebrow"><span class="live-dot"></span> YOUR SPACE. YOUR RULES.</div>
-          <div class="clock-block"><h1 class="hero-time" id="home-time">--:--</h1><p class="hero-date" id="home-date">Local time</p></div>
-          <div class="hero-card">
+          <div class="clock-block" id="clock-block"><h1 class="hero-time" id="home-time">--:--</h1><p class="hero-date" id="home-date">Local time</p></div>
+          <div class="hero-card" id="hero-card">
             <div class="card-glow" aria-hidden="true"></div>
             <div class="hero-top"><span class="micro-label">THE FIELD IS YOURS</span><span class="micro-label">01 / Φ</span></div>
             <div class="phi-emblem" aria-hidden="true">Φ</div>
@@ -38,15 +38,21 @@
             <p>Local first. No mandatory account. No pretend system privileges.</p>
             <button type="button" class="text-action" id="home-surf">Enter PhiSurf <span aria-hidden="true">↗</span></button>
           </div>
-          <div class="section-label"><span>YOUR APPS</span><span>06 / LOCAL SHELL</span></div>
+          <div class="section-label"><span>YOUR APPS</span><div class="section-actions"><span>06 / LOCAL SHELL</span><button type="button" id="customize-home" aria-expanded="false" aria-controls="home-editor">CUSTOMIZE ↗</button></div></div>
           <div class="app-grid" id="app-grid">
-            <button type="button" class="app-tile" data-open="notes"><span class="app-icon">✎</span><span>Notes</span><small>Local</small></button>
-            <button type="button" class="app-tile" data-open="vault"><span class="app-icon">◇</span><span>Vault</span><small>Export</small></button>
-            <button type="button" class="app-tile" data-open="pulse"><span class="app-icon">◉</span><span>Pulse</span><small>Browser</small></button>
-            <button type="button" class="app-tile" data-open="settings"><span class="app-icon">⚙</span><span>Settings</span><small>Local</small></button>
-            <button type="button" class="app-tile" data-open="about"><span class="app-icon">Φ</span><span>About</span><small>Scope</small></button>
-            <button type="button" class="app-tile" id="grid-surf"><span class="app-icon">✳</span><span>PhiSurf</span><small>Navigate</small></button>
+            <button type="button" class="app-tile" data-shortcut="notes" data-open="notes"><span class="app-icon">✎</span><span>Notes</span><small>Local</small></button>
+            <button type="button" class="app-tile" data-shortcut="vault" data-open="vault"><span class="app-icon">◇</span><span>Vault</span><small>Export</small></button>
+            <button type="button" class="app-tile" data-shortcut="pulse" data-open="pulse"><span class="app-icon">◉</span><span>Pulse</span><small>Browser</small></button>
+            <button type="button" class="app-tile" data-shortcut="settings" data-open="settings"><span class="app-icon">⚙</span><span>Settings</span><small>Local</small></button>
+            <button type="button" class="app-tile" data-shortcut="about" data-open="about"><span class="app-icon">Φ</span><span>About</span><small>Scope</small></button>
+            <button type="button" class="app-tile" data-shortcut="phisurf" id="grid-surf"><span class="app-icon">✳</span><span>PhiSurf</span><small>Navigate</small></button>
           </div>
+          <section class="home-editor" id="home-editor" aria-label="Customize home shortcuts" hidden>
+            <h2>Make it yours.</h2>
+            <p>Move shortcuts using the arrow buttons. Changes save in this browser and travel in your JSON backup.</p>
+            <ol id="home-shortcuts-list" class="home-shortcuts-list"></ol>
+            <div class="editor-actions"><button type="button" id="reset-home" class="ghost-button">Reset home</button><button type="button" id="close-home-editor" class="primary-button">Done</button></div>
+          </section>
           <p class="foot-note">This is a browser interface, not Android firmware. Hardware access is not claimed.</p>
         </section>
 
@@ -92,6 +98,12 @@
             <label class="accent-choice"><input type="radio" name="accent" value="violet"> <span class="color-chip violet"></span> Nebula violet</label>
             <label class="accent-choice"><input type="radio" name="accent" value="amber"> <span class="color-chip amber"></span> Solar amber</label>
           </fieldset>
+          <fieldset class="settings-group"><legend>HOME APPEARANCE</legend>
+            <label class="accent-choice"><input type="radio" name="home-layout" value="grid"> App grid</label>
+            <label class="accent-choice"><input type="radio" name="home-layout" value="list"> App list</label>
+          </fieldset>
+          <label class="setting-line" for="clock-toggle"><span><strong>Show home clock</strong><small>Keep a large local clock</small></span><input id="clock-toggle" type="checkbox"></label>
+          <label class="setting-line" for="hero-toggle"><span><strong>Show welcome card</strong><small>Hide the hero to see apps sooner</small></span><input id="hero-toggle" type="checkbox"></label>
           <label class="setting-line" for="compact-toggle"><span><strong>Compact app grid</strong><small>Fit more in one view</small></span><input id="compact-toggle" type="checkbox"></label>
           <label class="setting-line" for="motion-toggle"><span><strong>Reduce motion</strong><small>Disable decorative transitions</small></span><input id="motion-toggle" type="checkbox"></label>
           <p class="foot-note">System-wide Android settings are not available from this browser demonstration.</p>
@@ -102,7 +114,7 @@
           <div class="about-emblem" aria-hidden="true">Φ</div>
           <h2>Capability is not authority.</h2>
           <p class="subhead">A mobile expression of the PhiOS sovereignty contract, built as a verifiable, offline-first browser shell before experimenting with Android firmware.</p>
-          <div class="stat-list"><div><span>Milestone</span><strong>Rung 1</strong></div><div><span>Implementation</span><strong>Web / PWA</strong></div><div><span>Android distribution</span><strong>Not built</strong></div><div><span>Device qualification</span><strong>None</strong></div></div>
+          <div class="stat-list"><div><span>Milestone</span><strong>Rung 1.1</strong></div><div><span>Implementation</span><strong>Web / PWA</strong></div><div><span>Android distribution</span><strong>Not built</strong></div><div><span>Device qualification</span><strong>None</strong></div></div>
           <a class="external-link" href="https://github.com/MichaelWave369/PhiOS-Mobile" target="_blank" rel="noopener noreferrer">Explore source ↗</a>
         </section>
       </div>
@@ -115,6 +127,23 @@
         <button type="button" data-open="settings" aria-label="Settings"><span>⚙</span><small>SETUP</small></button>
       </nav>
 
+      <section class="quick-panel" id="quick-panel" role="dialog" aria-modal="true" aria-labelledby="quick-title" hidden>
+        <header class="quick-header">
+          <div><p class="eyebrow">LOCAL CONTROL CENTER</p><h2 id="quick-title">Quick settings</h2></div>
+          <button type="button" id="close-quick" class="circle-action" aria-label="Close quick settings">×</button>
+        </header>
+        <div class="quick-content">
+          <div class="quick-notice"><strong>Browser shell only</strong><span id="quick-network">Checking browser network hint</span><small>No radio, brightness or system permissions are controlled here.</small></div>
+          <div class="quick-grid">
+            <button type="button" class="quick-tile" id="quick-note"><span>✎</span> Open Notes</button>
+            <button type="button" class="quick-tile" id="quick-vault"><span>◇</span> Export / Vault</button>
+            <button type="button" class="quick-tile" id="quick-accent"><span>✳</span> Cycle accent: <strong id="quick-accent-label">cyan</strong></button>
+          </div>
+          <label class="setting-line" for="quick-compact"><span><strong>Compact shortcuts</strong><small>Change shell layout</small></span><input type="checkbox" id="quick-compact"></label>
+          <label class="setting-line" for="quick-motion"><span><strong>Reduce motion</strong><small>Disable interface animations</small></span><input type="checkbox" id="quick-motion"></label>
+          <p class="foot-note">Swipe down from the top edge to open this panel. Settings are browser-local.</p>
+        </div>
+      </section>
       <div class="surf-overlay" id="phisurf" role="dialog" aria-modal="true" aria-labelledby="surf-title" hidden>
         <button type="button" class="surf-close" id="close-surf" aria-label="Close PhiSurf">×</button>
         <div class="surf-heading"><p class="eyebrow">QUICK NAVIGATION</p><h2 id="surf-title">ΦSURF</h2><p>Every destination, one gesture away.</p></div>
@@ -128,12 +157,12 @@
           <button type="button" class="wheel-app w5" data-open="settings"><span>⚙</span><small>SETUP</small></button>
           <button type="button" class="wheel-app w6" data-open="about"><span>Φ</span><small>ABOUT</small></button>
         </div>
-        <p class="surf-hint">Swipe in from the left edge or press Alt + S. Escape closes.</p>
+        <p class="dial-selection" id="dial-selection" aria-live="off">Drag outward to choose</p><p class="surf-hint">Drag from the center and release to launch, or tap an icon. Swipe from left edge / Alt + S to open. Escape closes.</p>
       </div>
 
       <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
     </div>
   </main>
-  <p class="desktop-caption">ΦOS MOBILE · RUNG 01 · BROWSER SHELL / NO PHONE FIRMWARE</p>
+  <p class="desktop-caption">ΦOS MOBILE · RUNG 1.1 · BROWSER SHELL / NO PHONE FIRMWARE</p>
 </body>
 </html>

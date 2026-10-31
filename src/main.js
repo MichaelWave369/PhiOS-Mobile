@@ -1,7 +1,8 @@
 import {
-  STORAGE_KEY, NOTE_LIMIT, APPS, defaultState, loadState, persistState,
+  STORAGE_KEY, NOTE_LIMIT, APPS, defaultState, sanitizeState, loadState, persistState,
   serializeBackup, parseBackup
 } from "./core.mjs";
+import { initLivingShell } from "./living.mjs";
 
 const byId = (id) => document.getElementById(id);
 const storage = (() => {
@@ -11,6 +12,7 @@ let state = loadState(storage);
 let activeScreen = "home";
 let previousFocus = null;
 let toastTimer;
+let living = null;
 
 const surf = byId("phisurf");
 const screens = [...document.querySelectorAll("[data-screen]")];
@@ -48,6 +50,7 @@ function save() {
 
 function openSurf() {
   if (!surf.hidden) return;
+  living?.closeQuick(false);
   previousFocus = document.activeElement;
   surf.hidden = false;
   for (const node of surfBackground) node.inert = true;
@@ -57,6 +60,7 @@ function openSurf() {
 function closeSurf(restoreFocus = true) {
   if (surf.hidden) return;
   surf.hidden = true;
+  living?.clearDial();
   for (const node of surfBackground) node.inert = false;
   if (restoreFocus && previousFocus && typeof previousFocus.focus === "function") previousFocus.focus();
   previousFocus = null;
@@ -64,8 +68,11 @@ function closeSurf(restoreFocus = true) {
 
 function openScreen(screenName) {
   if (!APPS.some((app) => app.id === screenName)) return;
+  const previousIndex = APPS.findIndex(app => app.id === activeScreen);
   activeScreen = screenName;
+  living?.closeQuick(false);
   closeSurf(false);
+  byId("screens").dataset.direction = APPS.findIndex(app => app.id === screenName) >= previousIndex ? "forward" : "back";
   for (const node of screens) node.hidden = node.dataset.screen !== screenName;
   for (const button of document.querySelectorAll(".dock [data-open]")) {
     if (button.dataset.open === screenName) button.setAttribute("aria-current", "page");
@@ -132,7 +139,11 @@ document.addEventListener("keydown", (event) => {
 
 let startPointer = null;
 document.addEventListener("pointerdown", (event) => {
-  startPointer = surf.hidden && event.clientX <= 26 ? { x: event.clientX, y: event.clientY } : null;
+  const bounds = byId("device").getBoundingClientRect();
+  const insideDevice = event.clientY >= bounds.top && event.clientY <= bounds.bottom;
+  const nearLeft = event.clientX >= bounds.left && event.clientX <= bounds.left + 26;
+  startPointer = surf.hidden && insideDevice && nearLeft
+    ? { x: event.clientX, y: event.clientY } : null;
 }, { passive: true });
 document.addEventListener("pointerup", (event) => {
   if (!startPointer) return;
@@ -201,6 +212,7 @@ byId("restore-file").addEventListener("change", async (event) => {
     const success = save();
     paintPreferences();
     updateNote();
+    living?.sync();
     showToast(success ? "Backup restored locally." : "Loaded for this session, but storage is unavailable.");
   } catch (error) {
     showToast(error.message || "Could not import backup.");
@@ -216,6 +228,7 @@ byId("erase-button").addEventListener("click", () => {
   state = defaultState();
   paintPreferences();
   updateNote();
+  living?.sync();
   byId("save-status").textContent = success ? "No saved local note." : "Storage is unavailable.";
   showToast(success ? "Local PhiOS Mobile data erased." : "Local storage could not be cleared.");
 });
@@ -239,5 +252,15 @@ updateNote();
 updateClock();
 updatePulse();
 openScreen(activeScreen);
+living = initLivingShell({
+  getState: () => state,
+  applyState: (partial) => {
+    state = sanitizeState({ ...state, ...partial });
+    paintPreferences();
+    save();
+    living?.sync();
+  },
+  openScreen, openSurf, showToast
+});
 setInterval(updateClock, 30000);
 void registerOfflineShell();
