@@ -145,32 +145,30 @@ def launcher_has_foreground(activity):
 
 
 def stock_launcher_anr_close_button(nodes, window_dump):
-    """Allow one recovery ONLY for the Android stock Pixel Launcher ANR overlay.
+    """Recognize only the Android-owned Pixel Launcher ANR system overlay.
 
-    The ANR title in the UI must match the stock launcher AND the actual
-    focused system window must name its package. Never close an ANR belonging
-    to PhiOS, another app, or a merely similar-looking fake dialog.
+    Require the exact system UI title/button and either a focused Pixel
+    Launcher ANR window, or its visibly drawn SYSTEM_ALERT window (Android 15
+    sometimes omits mFocusedWindow from dumpsys window windows). Never
+    recover a PhiOS app ANR or an unrelated app's alert.
     """
-    # Some Android 15 builds omit mFocusedWindow entirely from dumpsys
-    # window windows. In that case require a fully visible Android-owned
-    # SYSTEM_ALERT window for the *exact* stock Pixel Launcher package.
     focused = any(
         re.search(r"mFocusedWindow=.*Application Not Responding:\s*"
                   r"com\.google\.android\.apps\.nexuslauncher(?:\s|}|$)", line)
         for line in window_dump.splitlines()
     )
-    blocks = re.split(r"(?=^[ \\t]*Window #\\d+[ \\t]+Window\\{)", window_dump, flags=re.M)
+    blocks = re.split(r"(?=^[ \t]*Window #\d+[ \t]+Window\{)", window_dump, flags=re.M)
     visible_stock_alert = False
     for block in blocks:
         first = block.splitlines()[0].strip() if block.strip() else ""
         if not re.fullmatch(
-            r"Window #\\d+ Window\\{[^\\n]*Application Not Responding: "
-            r"com\\.google\\.android\\.apps\\.nexuslauncher\\}:",
+            r"Window #\d+ Window\{[^\n]*Application Not Responding: "
+            r"com\.google\.android\.apps\.nexuslauncher\}:",
             first,
         ):
             continue
-        if (re.search(r"\\bmOwnerUid=1000\\b", block)
-                and re.search(r"\\bpackage=android\\b", block)
+        if (re.search(r"\bmOwnerUid=1000\b", block)
+                and re.search(r"\bpackage=android\b", block)
                 and "ty=SYSTEM_ALERT" in block
                 and "Surface: shown=true" in block
                 and "isOnScreen=true" in block
@@ -192,6 +190,7 @@ def stock_launcher_anr_close_button(nodes, window_dump):
         and n.attrib.get("package", "") == "android"
     ]
     return candidates[0] if len(candidates) == 1 else None
+
 
 
 def startup_diagnostics(attempt):
