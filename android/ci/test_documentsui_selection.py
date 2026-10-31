@@ -29,9 +29,9 @@ class DocumentsUISelectionTests(unittest.TestCase):
         # Confirm the prior faulty substring-based lookup would have hit
         # DocumentsUI's preview control instead of the desired row.
         self.assertEqual(smoke.locate(tree, "phios-launcher-profile-v1.json"),
-                         tree[1])
+                         tree[0])
         selected = smoke.select_document_filename(tree, "phios-launcher-profile-v1.json")
-        self.assertIs(selected, tree[2])
+        self.assertIs(selected, tree[1])
         self.assertEqual(smoke.coordinates(selected), ("346", "1186"))
 
     def test_fail_closed_if_only_preview_icon_exists(self):
