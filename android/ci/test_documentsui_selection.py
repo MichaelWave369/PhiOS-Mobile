@@ -50,6 +50,24 @@ class DocumentsUISelectionTests(unittest.TestCase):
         with self.assertRaises(AssertionError):
             smoke.select_document_filename(tree, "profile.json")
 
+    def test_restore_button_not_restore_dialog_title(self):
+        tree = nodes("""<hierarchy>
+            <node class="android.widget.TextView" text="Preview launcher restore"
+                  resource-id="android:id/alertTitle" />
+            <node class="android.widget.Button" text="CANCEL" resource-id="android:id/button2" />
+            <node class="android.widget.Button" text="RESTORE" resource-id="android:id/button1"
+                  bounds="[600,1300][960,1400]" />
+        </hierarchy>""")
+        self.assertIs(smoke.locate(tree, "Restore"), tree[0])
+        self.assertIs(smoke.select_dialog_button(tree, "Restore"), tree[2])
+        self.assertEqual(smoke.coordinates(tree[2]), ("780", "1350"))
+
+    def test_missing_restore_button_is_not_silently_accepted(self):
+        tree = nodes("""<hierarchy><node class="android.widget.TextView"
+            text="Preview launcher restore" /></hierarchy>""")
+        with self.assertRaises(AssertionError):
+            smoke.select_dialog_button(tree, "Restore")
+
     def test_refuse_near_match(self):
         tree = nodes("""<hierarchy><node class="android.widget.TextView"
             text="phios-launcher-profile-v1.json.bak" resource-id="android:id/title" /></hierarchy>""")
