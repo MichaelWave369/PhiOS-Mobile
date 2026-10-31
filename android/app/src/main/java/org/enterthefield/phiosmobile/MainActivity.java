@@ -361,7 +361,20 @@ public final class MainActivity extends Activity {
 
     private void launchApp(LauncherActivityInfo info) {
         try {
+            // Prefer the platform's dedicated current-user launcher API.
             launcherApps.startMainActivity(info.getComponentName(), Process.myUserHandle(), null, null);
+            return;
+        } catch (RuntimeException launcherFailure) {
+            // Some Android builds gate LauncherApps launches behind the HOME role.
+            // A normal explicit ACTION_MAIN/LAUNCHER intent is permitted for the
+            // current user's exported, discoverable app activity.
+        }
+        try {
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            intent.setComponent(info.getComponentName());
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+            startActivity(intent);
         } catch (RuntimeException error) {
             Toast.makeText(this, "Android could not launch this app.", Toast.LENGTH_SHORT).show();
         }
