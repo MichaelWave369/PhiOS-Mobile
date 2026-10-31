@@ -139,7 +139,9 @@ def produce(apk, gradle, aapt, apksigner, out):
         "signature": signature,
         "build": {
             "repository": os.environ.get("GITHUB_REPOSITORY", "local"),
-            "sourceCommit": os.environ.get("GITHUB_SHA", "local-untracked"),
+            "sourceCommit": os.environ.get("PHIOS_SOURCE_SHA",
+                                           os.environ.get("GITHUB_SHA", "local-untracked")),
+            "ciCheckoutSha": os.environ.get("GITHUB_SHA", "local-untracked"),
             "workflowRun": os.environ.get("GITHUB_RUN_ID", "local"),
             "event": os.environ.get("GITHUB_EVENT_NAME", "local"),
         },
