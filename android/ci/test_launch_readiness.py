@@ -63,6 +63,34 @@ class LaunchReadinessTests(unittest.TestCase):
         self.assertIs(close, nodes[1])
         self.assertEqual(smoke.coordinates(close), ("540", "1233"))
 
+    def test_visible_android15_system_anr_without_mfocusedwindow(self):
+        # Exact window identity, owner and visible surface, as captured from
+        # the failed API 35 emulator's dumpsys window windows evidence.
+        windows = (
+            "  Window #6 Window{5bf875d u0 Application Not Responding: "
+            "com.google.android.apps.nexuslauncher}:\n"
+            "    mDisplayId=0 rootTaskId=1\n"
+            "    mOwnerUid=1000 showForAllUsers=true package=android appop=SYSTEM_ALERT_WINDOW\n"
+            "    mAttrs={(0,0) ty=SYSTEM_ALERT fmt=TRANSLUCENT}\n"
+            "      Surface: shown=true mDrawState=HAS_DRAWN\n"
+            "    isOnScreen=true\n"
+            "    isVisible=true\n"
+            "  mTopFocusedDisplayId=0\n"
+        )
+        nodes = self._stock_anr_nodes()
+        self.assertIs(smoke.stock_launcher_anr_close_button(nodes, windows), nodes[1])
+        for invalid in (
+            windows.replace("mOwnerUid=1000", "mOwnerUid=10045"),
+            windows.replace("package=android", "package=org.enterthefield.phiosmobile"),
+            windows.replace("ty=SYSTEM_ALERT", "ty=APPLICATION"),
+            windows.replace("Surface: shown=true", "Surface: shown=false"),
+            windows.replace("isOnScreen=true", "isOnScreen=false"),
+            windows.replace("isVisible=true", "isVisible=false"),
+            windows.replace("com.google.android.apps.nexuslauncher",
+                            "org.enterthefield.phiosmobile"),
+        ):
+            self.assertIsNone(smoke.stock_launcher_anr_close_button(nodes, invalid))
+
     def test_other_app_anr_cannot_be_dismissed(self):
         nodes = self._stock_anr_nodes()
         for focused in (
