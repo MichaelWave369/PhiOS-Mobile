@@ -1,62 +1,55 @@
 # PhiOS Mobile: milestone ladder
 
-## Rung 1: Touch shell (merged)
-- [x] Responsive, touch-friendly browser shell
-- [x] PhiSurf navigation with accessible button alternatives
-- [x] Local notes, preferences, export, and import
-- [x] Static PWA cache and offline-support infrastructure
-- [x] Truthful browser capability/status screen
-- [x] Testable core logic and automated static build
-- [ ] GitHub Actions CI pass on the PR (verify after GitHub runs)
-- [ ] Manual phone-browser and keyboard/screen-reader smoke test
-- [ ] Prove offline reload after installation on actual target browser
-- [ ] Enable and verify GitHub Pages deployment
+All statuses below describe narrow engineering evidence. CI compile success does not mean a device or operating system is qualified.
+
+## Rung 1: Touch browser shell (merged)
+- [x] Touch-first browser home, notes, vault, PhiSurf and settings
+- [x] Static site build, unit tests and GitHub Pages workflow
+- [x] CI checks passed on PR #1
+- [ ] Physical phone and screen-reader interaction review
+- [ ] Confirm offline reload on supported physical browsers
 
 ## Rung 1.1: Living touch shell (merged)
-- [x] Directional transitions and hidden scrollbar with scroll padding
-- [x] Home customization with rearrangeable shortcuts, list/grid mode and optional panels
-- [x] Browser-local quick settings drawer and constrained edge gestures
-- [x] Drag-sector PhiSurf interaction with tap/keyboard alternatives
-- [x] Schema 1 storage and backup migration tests
-- [ ] CI run for this PR passes
-- [ ] Manual real-device viewport, pointer gesture, keyboard and screen reader validation
-- [ ] Verify offline reload after the service worker cache update
+- [x] Reorder shortcuts, choose grid/list, hide home panels
+- [x] PhiSurf dial, local quick controls, scoped edge gestures and transition polish
+- [x] Backward-compatible storage and JSON backup migration
+- [x] CI passed on PR #2
+- [ ] Manual screen-reader and physical mobile-browser UX qualification
 
-## Rung 2: Android launcher prototype (native preview PR)
-- [x] Native Android HOME and LAUNCHER activities in a separate app subproject
-- [x] LauncherApps current-user discovery, app search and app launch
-- [x] Local pinned apps and real native PhiSurf dial with accessible fallback buttons
-- [x] Open system settings and original/default-home settings without touching firmware
-- [x] Android CI APK/test workflow and explicit physical/emulator qualification plan
-- [ ] Native CI build and JUnit test pass
-- [ ] Emulator launcher/default-home/revert smoke test
-- [ ] Physical spare-device verification and accessibility qualification
-- [ ] Optional notification integration, consent and permission checks (later rung)
+## Rung 2: Native Android HOME launcher (merged)
+- [x] Separate native Java launcher with HOME and LAUNCHER intents
+- [x] Real launchable app list, app launch, search and pinned shortcuts
+- [x] Native PhiSurf dial with accessible button choices
+- [x] No internet, all-packages, notification-listener or call permissions
+- [x] Debug APK built; JVM tests passed on PR #3
+- [ ] Android emulator launcher UX qualification
+- [ ] Default HOME choice and rollback qualification
+- [ ] Spare physical device smoke testing and accessibility audit
 
-## Rung 2.1: Android native UX
-- Bring configurable native layouts, home/widgets and proper notification UX behind explicit user consent
-- Add reproducible APK provenance and signed release track
-- Keep PhiOS PWA and native launcher state separate until schema/consent sync is engineered
+## Rung 2 verification: disposable emulator (this PR)
+- [x] Add CI that boots a virtual Android phone without local setup
+- [x] Add black-box APK install, permission, app list, PhiSurf, search and pin checks
+- [x] Capture screenshots, XML trees, relevant logs and APK-identified test receipt
+- [ ] Run CI successfully and inspect screenshot artifacts
+- [ ] Test real HOME selection/rollback in a separate controlled test
+- [ ] Test a specifically named spare physical device
 
-## Rung 3: Device-targeted AOSP image
-- Make an Android application that can be selected as the device launcher.
-- Implement native app discovery, system intents, and notifications using user-granted Android APIs, not simulated privileges.
-- Keep launcher packaging separate from AOSP device images.
-- Test on emulator and one specifically named physical device; preserve stock recovery path.
-- Never claim calls, emergency support, or permission isolation from the web demo.
+## Rung 2.1: Native UX and explicit optional capabilities
+- Enhance native home layout, widgets, shortcuts and bounded quick controls
+- Consider notification access only with independent opt-in and revoke instructions
+- Add a signed release track and independently reproducible APK build evidence
+- Keep native app preferences separate from browser notes until a reviewed migration/sync mechanism exists
 
 ## Rung 3: Device-targeted AOSP image
-- Choose one unlockable, well-supported reference device, verifying bootloader rules and official factory-image restore.
-- Produce a reproducible build and hardware license/SBOM inventory.
-- Qualify verified boot state, OTA signing, encryption, recovery, cameras, Wi-Fi, Bluetooth, cellular/IMS/VoLTE/SMS, GPS, battery/thermal, accessibility, banking limitations, and emergency calling as separate gates.
-- No daily-driver recommendations until emergency calling, rollback, and hardware recovery are independently demonstrated.
-- Never ship unreviewed proprietary components or claim hardware support by analogy.
+- Select one officially unlockable reference device with documented stock restoration
+- Build reproducibly from reviewed sources, licenses and vendor dependency inventory
+- Qualify boot, updates, storage encryption, accessibility, battery, cellular, SMS, calls,
+  emergency calling and hardware services separately before any daily-driver claim
+- No firmware flashing or support claims from emulators alone
 
-## Rung 4: Unified PhiOS ecosystem
-- Shared open data schemas between desktop, mobile, XR, and local home hosts.
-- Optional explicit pairing; no required Phi account or recurring cloud token.
-- PhiServe / PhiStream optional processing with clear device-side consent and revocation.
-- Portable backups and independent restoration tests.
+## Rung 4: Unified sovereign ecosystem
+- Versioned portable data schemas across desktop, mobile and XR
+- Optional consent-based local host pairing and provider-neutral inference
+- Independent local backups, exit tests, restore and rollback evidence
 
-## Governance
-Follow the PhiOS Sovereignty Contract: user exit, offline behavior, model/provider choice, permission boundaries, and truthful evidence. Labels like verified, secure, installed, and supported require concrete device-bound test receipts. This roadmap is a plan, not qualification evidence.
+Source principle: capability is not authority. A green badge must always name exactly what was tested.

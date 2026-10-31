@@ -57,3 +57,12 @@ There is no installer, root helper, system image, OTA updater, bootloader step o
 - Release signing, package provenance and independent device compatibility evidence are pending
 
 See [PhiOS Mobile roadmap](../docs/ROADMAP.md). Source identity and UI prototype live in the same repository but are independent outputs.
+
+
+## Run without installing anything locally
+
+Open **Actions → Android Emulator Smoke** in the PhiOS-Mobile GitHub repository. It runs automatically for emulator-related changes and can be invoked with **Run workflow**. The job starts a disposable Pixel-profile Android 15 (API 35) emulator on a GitHub-hosted runner. It installs the APK, uses the Android UI hierarchy to verify launcher rendering and search, opens the native PhiSurf selector and status, and checks local pin persistence across process restart.
+
+The workflow uploads `phios-mobile-emulator-api35-evidence`: actual PNG screenshots, XML UI snapshots, recent logcat, package/activity reports, compiled APK permissions and a JSON receipt tied to an APK SHA-256 digest. A red run is evidence of a failed check, not proof that the launcher is universally broken. Browser PWA testing, screen-reader review, physical Android hardware and HOME-default rollback are separate, pending gates.
+
+Never claim device compatibility from a CI build or emulator pass. The workflow does not select PhiOS as default Home or perform an emergency-call test.
