@@ -1,0 +1,14 @@
+{
+  "id": "./",
+  "name": "PhiOS Mobile Rung 1",
+  "short_name": "ΦOS Mobile",
+  "description": "Local-first touch shell prototype. Not phone firmware.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090e1a",
+  "theme_color": "#090e1a",
+  "icons": [
+    { "src": "./assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
