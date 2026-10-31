@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090e1a">
+  <meta name="description" content="PhiOS Mobile Rung 1: a local-first, offline-capable mobile shell prototype.">
+  <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./src/main.js"></script>
+  <title>ΦOS Mobile | Rung 1</title>
+</head>
+<body>
+  <div class="background-grid" aria-hidden="true"></div>
+  <main class="device" id="device" aria-label="PhiOS Mobile prototype">
+    <div class="device-inner">
+      <header class="statusbar" aria-label="Prototype status">
+        <span class="status-time" id="status-time">--:--</span>
+        <span class="status-caption">ΦOS / BROWSER PROTOTYPE</span>
+        <span class="status-network" id="status-network">NETWORK?</span>
+      </header>
+
+      <div class="topbar">
+        <div class="brand"><span class="brand-mark">Φ</span><span>PHIOS<span class="brand-light"> MOBILE</span><small>RUNG 01 · SOVEREIGN SHELL</small></span></div>
+        <button type="button" class="circle-action" id="open-surf-top" aria-label="Open PhiSurf quick navigation" aria-haspopup="dialog" aria-controls="phisurf">✳</button>
+      </div>
+
+      <div class="screens" id="screens">
+        <section class="screen" id="screen-home" data-screen="home" aria-labelledby="home-title">
+          <div class="eyebrow"><span class="live-dot"></span> YOUR SPACE. YOUR RULES.</div>
+          <div class="clock-block"><h1 class="hero-time" id="home-time">--:--</h1><p class="hero-date" id="home-date">Local time</p></div>
+          <div class="hero-card">
+            <div class="card-glow" aria-hidden="true"></div>
+            <div class="hero-top"><span class="micro-label">THE FIELD IS YOURS</span><span class="micro-label">01 / Φ</span></div>
+            <div class="phi-emblem" aria-hidden="true">Φ</div>
+            <h2 id="home-title">A different kind of mobile.</h2>
+            <p>Local first. No mandatory account. No pretend system privileges.</p>
+            <button type="button" class="text-action" id="home-surf">Enter PhiSurf <span aria-hidden="true">↗</span></button>
+          </div>
+          <div class="section-label"><span>YOUR APPS</span><span>06 / LOCAL SHELL</span></div>
+          <div class="app-grid" id="app-grid">
+            <button type="button" class="app-tile" data-open="notes"><span class="app-icon">✎</span><span>Notes</span><small>Local</small></button>
+            <button type="button" class="app-tile" data-open="vault"><span class="app-icon">◇</span><span>Vault</span><small>Export</small></button>
+            <button type="button" class="app-tile" data-open="pulse"><span class="app-icon">◉</span><span>Pulse</span><small>Browser</small></button>
+            <button type="button" class="app-tile" data-open="settings"><span class="app-icon">⚙</span><span>Settings</span><small>Local</small></button>
+            <button type="button" class="app-tile" data-open="about"><span class="app-icon">Φ</span><span>About</span><small>Scope</small></button>
+            <button type="button" class="app-tile" id="grid-surf"><span class="app-icon">✳</span><span>PhiSurf</span><small>Navigate</small></button>
+          </div>
+          <p class="foot-note">This is a browser interface, not Android firmware. Hardware access is not claimed.</p>
+        </section>
+
+        <section class="screen" id="screen-notes" data-screen="notes" aria-labelledby="notes-title" hidden>
+          <p class="eyebrow">01 / PRIVATE SCRATCHPAD</p><h1 id="notes-title">Field Notes</h1>
+          <p class="subhead">One local note. No server, no sign-in, no automatic sync.</p>
+          <label class="field-label" for="note-input">YOUR NOTE <span id="note-count">0 / 50,000</span></label>
+          <textarea id="note-input" maxlength="50000" spellcheck="true" placeholder="Start with an idea. The universe can deal with the consequences."></textarea>
+          <p class="inline-status" id="save-status" role="status">Stored on this browser only.</p>
+          <button type="button" class="ghost-button" id="clear-note">Clear note</button>
+        </section>
+
+        <section class="screen" id="screen-vault" data-screen="vault" aria-labelledby="vault-title" hidden>
+          <p class="eyebrow">02 / EXIT BEFORE LOCK-IN</p><h1 id="vault-title">Local Vault</h1>
+          <p class="subhead">Take your notes and preferences with you. Downloads are plain JSON, not encrypted backups.</p>
+          <div class="info-panel"><span class="micro-label">YOUR DATA</span><strong>1 note + shell settings</strong><p>Saved in this browser's local storage when available. Clearing site data also clears the local copy.</p></div>
+          <button type="button" class="primary-button" id="export-button">↓ Export JSON backup</button>
+          <label class="field-label" for="restore-file">RESTORE A BACKUP</label>
+          <input id="restore-file" type="file" accept=".json,application/json">
+          <p class="micro-copy">Import replaces your current note and settings after confirmation. File stays in the browser.</p>
+          <button type="button" class="ghost-button danger" id="erase-button">Erase local PhiOS Mobile data</button>
+        </section>
+
+        <section class="screen" id="screen-pulse" data-screen="pulse" aria-labelledby="pulse-title" hidden>
+          <p class="eyebrow">03 / VERIFIED, NOT IMAGINED</p><h1 id="pulse-title">Pulse</h1>
+          <p class="subhead">A truthful snapshot of what this web app can actually observe.</p>
+          <div class="stat-list">
+            <div><span>Browser network hint</span><strong id="pulse-network">Checking</strong></div>
+            <div><span>Secure context</span><strong id="pulse-secure">Checking</strong></div>
+            <div><span>Offline service worker</span><strong id="pulse-worker">Checking</strong></div>
+            <div><span>Installed display mode</span><strong id="pulse-install">Checking</strong></div>
+            <div><span>Local storage writes</span><strong id="pulse-storage">Checking</strong></div>
+          </div>
+          <button type="button" class="ghost-button" id="refresh-pulse">Refresh observations</button>
+          <p class="foot-note">Network status is a browser hint, not proof of internet access. This app cannot observe cellular radios, calls, boot state, or Android permissions.</p>
+        </section>
+
+        <section class="screen" id="screen-settings" data-screen="settings" aria-labelledby="settings-title" hidden>
+          <p class="eyebrow">04 / LOCAL CONTROL</p><h1 id="settings-title">Settings</h1>
+          <p class="subhead">These preferences stay on this device's browser profile unless you export them.</p>
+          <fieldset class="settings-group"><legend>ACCENT FREQUENCY</legend>
+            <label class="accent-choice"><input type="radio" name="accent" value="cyan"> <span class="color-chip cyan"></span> Ion cyan</label>
+            <label class="accent-choice"><input type="radio" name="accent" value="violet"> <span class="color-chip violet"></span> Nebula violet</label>
+            <label class="accent-choice"><input type="radio" name="accent" value="amber"> <span class="color-chip amber"></span> Solar amber</label>
+          </fieldset>
+          <label class="setting-line" for="compact-toggle"><span><strong>Compact app grid</strong><small>Fit more in one view</small></span><input id="compact-toggle" type="checkbox"></label>
+          <label class="setting-line" for="motion-toggle"><span><strong>Reduce motion</strong><small>Disable decorative transitions</small></span><input id="motion-toggle" type="checkbox"></label>
+          <p class="foot-note">System-wide Android settings are not available from this browser demonstration.</p>
+        </section>
+
+        <section class="screen" id="screen-about" data-screen="about" aria-labelledby="about-title" hidden>
+          <p class="eyebrow">05 / THE OPERATING PRINCIPLE</p><h1 id="about-title">PhiOS Mobile</h1>
+          <div class="about-emblem" aria-hidden="true">Φ</div>
+          <h2>Capability is not authority.</h2>
+          <p class="subhead">A mobile expression of the PhiOS sovereignty contract, built as a verifiable, offline-first browser shell before experimenting with Android firmware.</p>
+          <div class="stat-list"><div><span>Milestone</span><strong>Rung 1</strong></div><div><span>Implementation</span><strong>Web / PWA</strong></div><div><span>Android distribution</span><strong>Not built</strong></div><div><span>Device qualification</span><strong>None</strong></div></div>
+          <a class="external-link" href="https://github.com/MichaelWave369/PhiOS-Mobile" target="_blank" rel="noopener noreferrer">Explore source ↗</a>
+        </section>
+      </div>
+
+      <nav class="dock" aria-label="Primary navigation">
+        <button type="button" data-open="home" aria-label="Home"><span>⌂</span><small>HOME</small></button>
+        <button type="button" data-open="notes" aria-label="Notes"><span>✎</span><small>NOTES</small></button>
+        <button type="button" class="surf-trigger" id="open-surf-dock" aria-label="Open PhiSurf quick navigation" aria-haspopup="dialog" aria-controls="phisurf"><span>✳</span><small>SURF</small></button>
+        <button type="button" data-open="vault" aria-label="Vault"><span>◇</span><small>VAULT</small></button>
+        <button type="button" data-open="settings" aria-label="Settings"><span>⚙</span><small>SETUP</small></button>
+      </nav>
+
+      <div class="surf-overlay" id="phisurf" role="dialog" aria-modal="true" aria-labelledby="surf-title" hidden>
+        <button type="button" class="surf-close" id="close-surf" aria-label="Close PhiSurf">×</button>
+        <div class="surf-heading"><p class="eyebrow">QUICK NAVIGATION</p><h2 id="surf-title">ΦSURF</h2><p>Every destination, one gesture away.</p></div>
+        <div class="surf-wheel" aria-label="Choose an application">
+          <div class="wheel-rim" aria-hidden="true"></div>
+          <span class="wheel-center" aria-hidden="true">Φ</span>
+          <button type="button" class="wheel-app w1" data-open="home"><span>⌂</span><small>HOME</small></button>
+          <button type="button" class="wheel-app w2" data-open="notes"><span>✎</span><small>NOTES</small></button>
+          <button type="button" class="wheel-app w3" data-open="vault"><span>◇</span><small>VAULT</small></button>
+          <button type="button" class="wheel-app w4" data-open="pulse"><span>◉</span><small>PULSE</small></button>
+          <button type="button" class="wheel-app w5" data-open="settings"><span>⚙</span><small>SETUP</small></button>
+          <button type="button" class="wheel-app w6" data-open="about"><span>Φ</span><small>ABOUT</small></button>
+        </div>
+        <p class="surf-hint">Swipe in from the left edge or press Alt + S. Escape closes.</p>
+      </div>
+
+      <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+    </div>
+  </main>
+  <p class="desktop-caption">ΦOS MOBILE · RUNG 01 · BROWSER SHELL / NO PHONE FIRMWARE</p>
+</body>
+</html>
