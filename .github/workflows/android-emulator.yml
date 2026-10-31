@@ -1,7 +1,9 @@
 name: Android Emulator Smoke
 on:
   push:
-    branches: [main, "feat/**", "test/**"]
+    # Branch changes are tested by pull_request below. Only main gets a
+    # post-merge push run, avoiding duplicate push/PR emulator jobs.
+    branches: [main]
     paths:
       - "android/**"
       - ".github/workflows/android-emulator.yml"
