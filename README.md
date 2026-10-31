@@ -2,7 +2,17 @@
 
 **Sovereign. Coherent. Local. Free.**
 
-PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
+PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1.1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
+
+## Rung 1.1: The living shell
+
+- Smooth directional screen transitions, respecting reduced-motion preferences
+- Local quick settings drawer via the top button or downward edge swipe; these controls are **not** Android system toggles
+- Home editor with accessible move-up/down shortcut reordering, grid/list appearance, optional clock and hero card
+- PhiSurf center-to-sector drag selection with visual feedback; tap and keyboard alternatives remain
+- Right-edge swipe toward the center to return home; left-edge swipe still opens PhiSurf
+- Hidden visual scrollbar and improved scroll padding around the bottom dock
+- Existing Rung 1 notes and schema 1 JSON backups migrate into the version 2 local state format
 
 ## Rung 1: PhiShell Touch
 
