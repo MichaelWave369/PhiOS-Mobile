@@ -41,6 +41,8 @@ jobs:
         run: gradle --no-daemon -p android :app:assembleDebug :app:testDebugUnitTest --stacktrace
       - name: Validate provenance and package auditable debug test bundle
         shell: bash
+        env:
+          PHIOS_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           python3 -m py_compile android/ci/apk_receipt.py android/ci/test_apk_receipt.py
