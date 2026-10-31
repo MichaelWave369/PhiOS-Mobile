@@ -57,6 +57,10 @@ No Android notification, Internet, SMS, call, or system-setting privileges were 
 
 **This is not a production-ready daily driver launcher.** It has not been emulator-tested or qualified on a physical phone. Android owns the lock screen, calls, emergency services, notifications, cellular connectivity, security and boot behavior. Notification integration is a later opt-in milestone, not implemented here.
 
+## Rung 2.4: Debug APK evidence and safe test handoff
+
+GitHub Actions now verifies the produced debug APK's ZIP integrity, package/version/SDK/launcher metadata, permission list and Android Debug signing certificate. It uploads an **auditable test bundle** containing the APK, SHA-256 checksums and a machine-readable receipt. This is not a release signing process or a reproducibility claim. See [the safe testing guide](../docs/ANDROID_APK_TESTING.md).
+
 ## Build
 
 Requirements:
