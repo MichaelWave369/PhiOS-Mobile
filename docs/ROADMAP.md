@@ -41,6 +41,16 @@ All statuses below describe narrow engineering evidence. CI compile success does
 - [ ] Review green emulator run, screenshot artifacts and receipt for this exact commit
 - [ ] Real-device testing and accessibility remain unqualified
 
+## Rung 2.1b: Pinned Shelf and real Android app launch (this PR)
+- [x] Add an accessible horizontal pinned-app shelf to the native Home
+- [x] Add local Layout toggle for shelf, launch and unpin interactions, and bounded shortcut count
+- [x] Add pure Java shelf-selection tests
+- [x] Add test-only Android fixture app and wire only the emulator build to compile it
+- [x] Emulator script tests real installed-app launch and return via list and shelf
+- [ ] PR CI green including real app launch and default-Home rollback
+- [ ] Review real emulator screenshots, focus and viewport clipping
+- [ ] Physical spare-device and screen-reader qualification remain pending
+
 ## Rung 2.1: Native UX and explicit optional capabilities
 - Enhance native home layout, widgets, shortcuts and bounded quick controls
 - Consider notification access only with independent opt-in and revoke instructions

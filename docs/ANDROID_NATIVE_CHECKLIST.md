@@ -21,6 +21,15 @@ The emulator gate explicitly does **not** change the default HOME activity. It t
 - [ ] Collect and inspect default-HOME and restored-home screenshots and receipt
 - [ ] Never claim physical hardware support from disposable-emulator success
 
+## Rung 2.1b deterministic app-launch gate
+- [ ] A standalone, permission-free test Android APK installs alongside the launcher
+- [ ] Long-press pinning produces a visible, tappable native Home shelf icon
+- [ ] The fixture opens its own foreground Activity when tapped from the all-apps list
+- [ ] Return to the PhiOS Activity, pin the fixture and launch again from its shelf icon
+- [ ] Force-stop and restart PhiOS; pinned shelf persists
+- [ ] Existing layout and Home-role restoration checks still pass
+- [ ] Verify the fixture is NOT bundled into or shipped as the PhiOS launcher APK
+
 ## Manual emulator follow-up
 - [ ] Independently retest default HOME and stock restoration with manual interaction
 - [ ] Rotate and resize; verify layout, keyboard and dock interactions

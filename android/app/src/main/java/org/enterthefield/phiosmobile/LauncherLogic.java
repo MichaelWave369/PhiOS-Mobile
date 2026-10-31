@@ -1,10 +1,30 @@
 package org.enterthefield.phiosmobile;
 
 import java.util.Locale;
+import java.util.List;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 
 /** Side-effect-free rules shared by native launcher logic and local unit tests. */
 public final class LauncherLogic {
     private LauncherLogic() {}
+
+    /**
+     * Select up to maxItems of the installed apps in their existing stable order.
+     * Unknown pinned keys never create phantom launch targets.
+     */
+    public static List<String> shelfKeys(List<String> available, Set<String> pinned, int maxItems) {
+        List<String> result = new ArrayList<>();
+        if (available == null || pinned == null || maxItems <= 0) return result;
+        for (String key : new LinkedHashSet<>(available)) {
+            if (key != null && pinned.contains(key)) {
+                result.add(key);
+                if (result.size() == maxItems) break;
+            }
+        }
+        return result;
+    }
 
     public static boolean matchesQuery(String label, String query) {
         if (label == null) return false;

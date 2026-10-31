@@ -1,0 +1,19 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'org.enterthefield.phiosmobile.citarget'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'org.enterthefield.phiosmobile.citarget'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.0.1-test-only'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
