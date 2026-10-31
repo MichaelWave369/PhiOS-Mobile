@@ -125,8 +125,21 @@ def permissions():
         demand("android.permission." + forbidden not in report, "Unexpected permission: " + forbidden)
 
 def launch():
-    adb("shell", "am", "start", "-W", "-n", COMPONENT)
-    nodes = visible("PHIOS MOBILE", "home")
+    start_result = adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    (OUT / "launch-command.txt").write_text(start_result)
+    try:
+        nodes = visible("PHIOS MOBILE", "home", tries=9)
+    except Exception:
+        print("LAUNCH COMMAND:", start_result, flush=True)
+        activity = adb("shell", "dumpsys", "activity", "activities", check=False)
+        (OUT / "launch-activity-dump.txt").write_text(activity[-30000:])
+        logcat = adb("logcat", "-d", "-t", "1300", check=False)
+        (OUT / "launch-logcat.txt").write_text(logcat[-150000:])
+        keywords = ("AndroidRuntime", "FATAL EXCEPTION", "phiosmobile", "ActivityTaskManager",
+                    "WindowManager", "ProcessRecord", "Force finishing", "ANR", "Exception")
+        relevant = [line for line in logcat.splitlines() if any(k in line for k in keywords)]
+        print("LAUNCH DIAGNOSTICS:", "\n".join(relevant[-90:]), flush=True)
+        raise
     for expected in ("YOUR APPS", "All apps", "SURF"):
         demand(locate(nodes, expected) is not None, "Home UI missing: " + expected)
     screenshot("01-native-home")
