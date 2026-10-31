@@ -524,20 +524,37 @@ public final class MainActivity extends Activity {
     }
 
     private void openBackupMenu() {
-        String[] options = {"Export to JSON", "Import from JSON"};
-        new AlertDialog.Builder(this)
+        // A custom dialog shows both the privacy explanation and the actions.
+        // AlertDialog.setMessage() with setItems() hides the list on some Android builds.
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(18), dp(6), dp(18), dp(12));
+        TextView explanation = text(
+                "Back up pins and layout to a file you choose. No account or Internet "
+                + "permission is needed. Choose on-device storage if you do not "
+                + "want a document provider that may sync to the cloud. "
+                + "Imports show a preview before changing settings.", 13, MUTED, false);
+        explanation.setPadding(0, dp(4), 0, dp(10));
+        content.addView(explanation);
+        final AlertDialog[] holder = new AlertDialog[1];
+        Button export = button("Export to JSON", () -> {
+            holder[0].dismiss();
+            beginExportProfile();
+        });
+        Button restore = button("Import from JSON", () -> {
+            holder[0].dismiss();
+            beginImportProfile();
+        });
+        LinearLayout.LayoutParams first = new LinearLayout.LayoutParams(-1, dp(52));
+        first.bottomMargin = dp(8);
+        content.addView(export, first);
+        content.addView(restore, new LinearLayout.LayoutParams(-1, dp(52)));
+        holder[0] = new AlertDialog.Builder(this)
                 .setTitle("Local backup & restore")
-                .setMessage("Save your pinned apps and Home layout to a document you choose. "
-                        + "No account or internet permission is needed. "
-                        + "The chosen document provider may offer cloud storage, so select local "
-                        + "storage if you want the file kept entirely on-device. "
-                        + "Import previews changes before replacing your current settings.")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) beginExportProfile();
-                    else beginImportProfile();
-                })
+                .setView(content)
                 .setNegativeButton("Close", null)
-                .show();
+                .create();
+        holder[0].show();
     }
 
     private void beginExportProfile() {
