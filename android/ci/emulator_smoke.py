@@ -187,14 +187,33 @@ def launch():
                    "PhiOS launcher fatal exception; see startup diagnostics")
             demand(detail["processRunning"],
                    "PhiOS process absent after Android start; see startup diagnostics")
-            demand(not detail["launcherResumed"],
-                   "PhiOS resumed but its UI is missing; see startup diagnostics")
-            if attempt >= 3:
-                raise AssertionError("Android never brought PhiOS to the foreground "
-                                     "after 3 startup attempts; see screenshots and window dumps")
-            STARTUP_EVIDENCE["initialUiDelay"] = True
-            time.sleep(3)
-            continue
+            if detail["launcherResumed"]:
+                # A resumed Activity can precede a usable accessibility tree,
+                # especially during the first Google Play emulator boot.
+                # Observe the SAME foreground activity briefly; never relaunch
+                # or suppress a persistent missing-UI failure.
+                try:
+                    nodes = visible("PHIOS MOBILE", "home-settled-" + str(attempt), tries=7)
+                    STARTUP_EVIDENCE["initialUiDelay"] = True
+                    STARTUP_EVIDENCE["settledAfterResumed"] = True
+                except AssertionError:
+                    hierarchy = xml_snapshot("startup-final-hierarchy-" + str(attempt))
+                    summary = [node_label(n).strip()[:110] for n in hierarchy
+                               if node_label(n).strip()]
+                    (OUT / ("startup-visible-nodes-" + str(attempt) + ".txt")).write_text(
+                        "\n".join(summary[:90]) + "\n"
+                    )
+                    print("STARTUP VISIBLE NODES:", repr(summary[:40]), flush=True)
+                    raise AssertionError("PhiOS remained resumed without visible UI after "
+                                         "the bounded settling window; see activity, window, "
+                                         "hierarchy and screenshot evidence")
+            else:
+                if attempt >= 3:
+                    raise AssertionError("Android never brought PhiOS to the foreground "
+                                         "after 3 startup attempts; see screenshots and window dumps")
+                STARTUP_EVIDENCE["initialUiDelay"] = True
+                time.sleep(3)
+                continue
 
         for expected in ("YOUR APPS", "All apps", "SURF"):
             demand(locate(nodes, expected) is not None,
