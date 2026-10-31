@@ -4,6 +4,12 @@
 
 PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1.1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
 
+## Native emulator qualification (next gate)
+
+The new **Android Emulator Smoke** workflow boots a disposable Android 15 (API 35) virtual phone on GitHub. It builds the APK, installs it, inspects compiled permissions, exercises visible launcher and PhiSurf controls, checks search and pinned shortcuts, and captures screenshots, UI hierarchies and an evidence receipt. This does not require a local Android installation or change any personal phone. A successful run is *emulator-specific*, not proof of physical-device compatibility or emergency service readiness.
+
+See [emulator testing](android/README.md#run-without-installing-anything-locally) and [review checklist](docs/ANDROID_NATIVE_CHECKLIST.md).
+
 ## Rung 2: Android native launcher preview
 
 The `android/` subproject is a separate, user-selectable **Android HOME app**. It discovers and opens current-user launchable apps through Android LauncherApps, supports local pinned shortcuts and native PhiSurf, and provides a way to return to the original default Home. This is **not a new Android OS**, custom ROM, or daily-driver qualified launcher.

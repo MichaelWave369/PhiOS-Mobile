@@ -1,0 +1,70 @@
+name: Android Emulator Smoke
+on:
+  push:
+    branches: [main, "feat/**", "test/**"]
+    paths:
+      - "android/**"
+      - ".github/workflows/android-emulator.yml"
+  pull_request:
+    paths:
+      - "android/**"
+      - ".github/workflows/android-emulator.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  emulator-smoke:
+    name: Pixel emulator / Android API 35
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Configure Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+      - name: Locate Android command-line tools
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_HOME"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -x "$SDKMANAGER"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+      - name: Install Android build dependencies
+        run: |
+          set -euo pipefail
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+      - name: Compile launcher and run JVM tests
+        run: gradle --no-daemon -p android :app:assembleDebug :app:testDebugUnitTest --stacktrace
+      - name: Enable emulator hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          test -w /dev/kvm
+      - name: Boot emulator and exercise native launcher
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot -wipe-data
+          script: python3 android/ci/emulator_smoke.py
+      - name: Upload emulator screenshots, observations and failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phios-mobile-emulator-api35-evidence
+          path: android/ci/out/
+          if-no-files-found: warn
+          retention-days: 14

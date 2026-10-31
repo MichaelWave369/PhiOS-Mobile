@@ -1,28 +1,31 @@
-# Rung 2 native launcher qualification checklist
+# Rung 2 emulator and physical-device qualification
 
-**Never confuse successful compilation with device qualification.** Record API level, Android version, OEM, model, build fingerprint, time, tested APK digest and whether PhiOS Mobile was selected as the default HOME.
+## Disposable GitHub-hosted emulator (proposed CI)
+- [ ] Android debug APK compiles, installs, launches, and shows real app list
+- [ ] Compiled permission report excludes Internet and sensitive phone/data privileges
+- [ ] PhiSurf six-sector UI opens; text-button fallback and status panel respond
+- [ ] Search returns a no-results state for a nonsense query
+- [ ] Long-press pin persists across activity process restart
+- [ ] Artifacts include PNG captures, UI XML and APK SHA-256
+- [ ] Screenshot captures reviewed manually for clipping, legibility and gesture problems
 
-## Build proof
-- [ ] GitHub CI native assembleDebug and testDebugUnitTest green
-- [ ] Build artifact downloaded and SHA-256 recorded
-- [ ] APK inspected for package ID, requested permissions and HOME intent
+The emulator gate explicitly does **not** change the default HOME activity. It tests neither voice service reliability nor platform recovery. An emulator pass is narrow evidence, not device certification.
 
-## Android emulator
-- [ ] Package installs and opens from LAUNCHER without default-home selection
-- [ ] Actual launchable app list populates; search filters; tapping opens a real app
-- [ ] Pin and unpin via long-press; pins persist after relaunch and reboot
-- [ ] PhiSurf drag works in all six sectors; button fallback works with keyboard/screen reader
-- [ ] Rotations and inset layouts work without clipping
-- [ ] Default HOME selection works and can be reversed
-- [ ] Crash recovery and restoration of original Home documented
-- [ ] No notification/call/radio authority implied
+## Manual emulator follow-up
+- [ ] Test choosing PhiOS Mobile as default HOME and safely reverting to stock
+- [ ] Rotate and resize; verify layout, keyboard and dock interactions
+- [ ] Real app-launch and return from another app
+- [ ] TalkBack screen reader, physical keyboard, focus order, touch targets
+- [ ] Empty, disconnected and disabled-app scenarios
+- [ ] Confirm recovery after force-stop and configuration changes
 
-## Named physical test device
-- [ ] Stock Home retained, ADB/recovery instructions recorded
-- [ ] Native launcher test installed and removed successfully
-- [ ] Default Home selected and reversed without losing normal access
-- [ ] Launch, pinned state, rotation and accessibility tested
-- [ ] No claims about emergency calls until separately tested with provider-approved methods
+## Specifically named physical spare device
+- [ ] Save stock launcher identity, Android version and complete backup
+- [ ] Test installing/uninstalling, installed app discovery and foreground launch
+- [ ] Test default HOME change and restoration with hardware/vendor instructions
+- [ ] Test pin/search/rotation/accessibility and reinstall data behavior
+- [ ] Inspect APK permissions and record exact SHA-256/device fingerprint
+- [ ] Do not test real emergency dialing through synthetic methods
+- [ ] Keep daily-driver and emergency calling qualification explicitly pending
 
-## Future permission-sensitive features
-Notification listening, shortcuts and widgets each need separate user permission/consent design and scoped test evidence. No silent broad privileges, root, background polling or phone settings simulation.
+Use [the native launcher README](../android/README.md) for installation and scope.
