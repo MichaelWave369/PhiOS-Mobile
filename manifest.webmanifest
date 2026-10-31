@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "PhiOS Mobile Rung 1.1",
+  "name": "PhiOS Mobile Web Demo",
   "short_name": "ΦOS Mobile",
-  "description": "Local-first touch shell prototype. Not phone firmware.",
+  "description": "Local-first PWA shell with separate native Android launcher progress. This website is not phone firmware.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

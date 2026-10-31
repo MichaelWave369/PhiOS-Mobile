@@ -90,3 +90,36 @@ html.operator-halo .phi-emblem {text-shadow:0 0 18px var(--accent),0 0 45px var(
 html.operator-halo .hero-card {box-shadow:0 0 0 2px rgba(var(--accent-rgb),.5),0 0 38px rgba(var(--accent-rgb),.25)}
 html.operator-halo .brand-mark {text-shadow:0 0 18px var(--accent)}
 html.reduce-motion.operator-halo .hero-card {animation:none}
+
+
+/* Native Android progress is a separate track from the live web shell. */
+.native-track {
+  margin:18px 0 4px;padding:17px 17px 18px;border:1px solid rgba(var(--accent-rgb),.35);
+  border-radius:18px;background:linear-gradient(140deg,rgba(var(--accent-rgb),.13),#1b263e 56%,#131f32);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 12px 30px rgba(0,0,0,.17);
+}
+.native-track-head,.track-detail-heading{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.native-track-head>.micro-label{font-size:8px}
+.native-track-chip,.track-tag{display:inline-flex;align-items:center;border:1px solid rgba(var(--accent-rgb),.45);
+  border-radius:99px;color:var(--accent);background:rgba(var(--accent-rgb),.1);font-size:8px;
+  font-weight:800;letter-spacing:.06em;padding:6px 9px;white-space:nowrap}
+.native-track h2{font-size:21px;line-height:1.15;letter-spacing:-.035em;margin:16px 0 8px}
+.native-track p,.track-detail p{font-size:11px;line-height:1.65;color:var(--muted);margin:8px 0 13px}
+.native-track-steps{display:flex;flex-wrap:wrap;gap:6px;margin:15px 0}
+.native-track-steps span{font-size:9px;color:#c6dbee;line-height:1.45;border:1px solid var(--line);
+  background:rgba(9,17,30,.56);border-radius:8px;padding:7px 8px}
+.native-track-more{background:none;border:0;padding:8px 0;color:var(--accent);
+  font-size:11px;font-weight:800;text-align:left}
+.native-track-more span{padding-left:5px}
+.track-detail{border:1px solid var(--line);border-radius:16px;padding:17px 16px;margin:17px 0;
+  background:linear-gradient(160deg,#18263d,#101a2b)}
+.track-detail.native-detail{border-color:rgba(var(--accent-rgb),.3);
+  background:linear-gradient(135deg,rgba(var(--accent-rgb),.1),#121d31 64%)}
+.track-detail-heading .micro-label{color:var(--accent)}
+.track-detail h3{font-size:17px;letter-spacing:-.025em;margin:15px 0 7px}
+.track-detail .track-warning{color:#e0bd9d;border-left:2px solid #dba66f;padding:3px 0 3px 11px}
+.track-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}
+.track-link{color:var(--accent);border:1px solid rgba(var(--accent-rgb),.35);border-radius:10px;
+  text-decoration:none;padding:10px 11px;font-size:10px;font-weight:800;line-height:1.5}
+.track-link:hover,.track-link:focus-visible{background:rgba(var(--accent-rgb),.12)}
+@media(max-width:380px){.native-track-head>.micro-label{width:100%}.track-link{flex:1 1 100%}}
