@@ -207,6 +207,9 @@ def real_app_launch_and_shelf():
 
     tap(visible("Search launchable apps", "fixture-search"), "Search launchable apps")
     adb("shell", "input", "text", "CI%sTarget")
+    # Dismiss the software keyboard so the target row is actually tappable.
+    # UIAutomator can report nodes even when an IME covers their coordinates.
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
     nodes = visible("PhiOS CI Target", "fixture-matched")
     demand(locate(nodes, "Tap to open") is not None,
            "Fixture app missing from real Android LauncherApps discovery")
@@ -221,6 +224,7 @@ def real_app_launch_and_shelf():
     nodes = visible("Search launchable apps", "fixture-return")
     tap(nodes, "Search launchable apps")
     adb("shell", "input", "text", "CI%sTarget")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
     nodes = visible("Tap to open", "fixture-research")
     x, y = coordinates(locate(nodes, "Tap to open"))
     adb("shell", "input", "swipe", x, y, x, y, "1300")
