@@ -4,6 +4,14 @@
 
 PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1.1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
 
+## GitHub Pages now shows both tracks
+
+[Open the public PhiOS Mobile page](https://michaelwave369.github.io/PhiOS-Mobile/). It remains the **Rung 1.1 browser/PWA experience**, with native Android Rung 2.4 progress now visible on Home, About and the desktop footer.
+
+The Android functionality is a **separate test APK**, not a browser feature, not a ROM and not phone firmware. The page links to the GitHub Actions native APK workflow, the safe test guide and emulator evidence. A successful emulator job does not qualify a physical phone.
+
+The PWA's service worker uses **network-first navigation HTML** with an offline fallback so new Pages updates aren't permanently hidden behind an old cached index. The existing web Notes/Vault, PhiSurf and Passport behavior remains unchanged. On the first deployment after the old cache-first service worker, a hard refresh or a second reload may be needed to activate the new worker.
+
 ## Rung 2.4: Auditable native debug APK test handoff
 
 The Android build workflow publishes an **APK test bundle** with a SHA-256 checksum, verifiable debug signer fingerprint, compiled package/version/SDK details, permissions, and an explicit **not-a-production-release** receipt. This helps testers verify exactly what GitHub built. It is not a persistent signing identity or a reproducible-build claim. See [Android APK testing guide](docs/ANDROID_APK_TESTING.md).
