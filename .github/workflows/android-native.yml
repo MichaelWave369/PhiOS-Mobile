@@ -39,6 +39,28 @@ jobs:
           gradle-version: "9.6.0"
       - name: Build native debug APK and run local tests
         run: gradle --no-daemon -p android :app:assembleDebug :app:testDebugUnitTest --stacktrace
+      - name: Validate provenance and package auditable debug test bundle
+        shell: bash
+        env:
+          PHIOS_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 -m py_compile android/ci/apk_receipt.py android/ci/test_apk_receipt.py
+          PYTHONPATH=android/ci python3 -m unittest -v android/ci/test_apk_receipt.py
+          python3 android/ci/apk_receipt.py \
+            --apk android/app/build/outputs/apk/debug/app-debug.apk \
+            --gradle android/app/build.gradle \
+            --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt" \
+            --apksigner "$ANDROID_HOME/build-tools/36.0.0/apksigner" \
+            --out android/ci/out/debug-test-bundle
+          (cd android/ci/out/debug-test-bundle && sha256sum --check SHA256SUMS)
+      - name: Upload auditable debug test bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: phios-mobile-native-debug-test-bundle
+          path: android/ci/out/debug-test-bundle/
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload unsigned-for-release debug APK
         uses: actions/upload-artifact@v4
         with:

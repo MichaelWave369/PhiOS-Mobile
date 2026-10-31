@@ -72,6 +72,16 @@ All statuses below describe narrow engineering evidence. CI compile success does
 - [ ] Confirm post-merge emulator CI and physically test a spare device
 - [ ] Test alternate document providers, accessibility and malformed-file import UI
 
+## Rung 2.4: Auditable debug APK test handoff (this PR)
+- [x] Validate package ID, version, min/target SDK and launchable Activity against source and compiled manifest
+- [x] Fail on any requested Android permissions
+- [x] Verify Android debug signature and record signer certificate fingerprint
+- [x] Upload one checksum-verifiable test bundle with APK, JSON receipt, SHA256SUMS and safety instructions
+- [x] Include Python regression tests for metadata, permissions and signature parsing
+- [ ] CI green and inspect receipt from the exact built commit
+- [ ] Manual spare-phone install, update, original Home restore and uninstall
+- [ ] Separate secure *release signing* and reproducible build strategy; debug APK is not a production release
+
 ## Rung 2.1: Native UX and explicit optional capabilities
 - Enhance native home layout, widgets, shortcuts and bounded quick controls
 - Consider notification access only with independent opt-in and revoke instructions

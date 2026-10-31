@@ -86,3 +86,13 @@ Check the exact pull-request HEAD SHA for the pre-merge gate and the main merge 
 - [ ] Ensure existing app launch, permissions and default Home rollback checks still pass
 - [ ] Retain APK hash, DocumentsUI screenshots/XML and JSON receipt
 - [ ] Record provider-specific behavior as emulator-only, not OEM/device qualification
+
+## Rung 2.4: Auditable debug APK handoff
+- [ ] GitHub-native build validates ZIP integrity and Android package metadata
+- [ ] APK permission list is empty; build fails if unexpected permission appears
+- [ ] Android apksigner verification passes and certificate fingerprint is recorded
+- [ ] SHA256SUMS validates exactly the APK in the test bundle
+- [ ] Download the bundle from a green main Actions run and independently check hash
+- [ ] Verify no signing secrets are stored or used; debug signing is not a public release
+- [ ] Confirm safe stock Home restore and uninstall on a disposable/spare device
+- [ ] Establish a separate protected signed release plan before external distribution

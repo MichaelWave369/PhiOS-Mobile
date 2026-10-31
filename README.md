@@ -4,6 +4,10 @@
 
 PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1.1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
 
+## Rung 2.4: Auditable native debug APK test handoff
+
+The Android build workflow publishes an **APK test bundle** with a SHA-256 checksum, verifiable debug signer fingerprint, compiled package/version/SDK details, permissions, and an explicit **not-a-production-release** receipt. This helps testers verify exactly what GitHub built. It is not a persistent signing identity or a reproducible-build claim. See [Android APK testing guide](docs/ANDROID_APK_TESTING.md).
+
 ## Rung 2.2: Local native profile portability
 
 Android's native launcher includes a user-controlled document-picker backup for pinned apps and layout preferences. JSON import checks schema, size, data types and installed-app availability, and requires a confirmation before restoring. It does **not** touch the Android Home role, app data or the independent PhiOperator/PWA backup.
