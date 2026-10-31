@@ -23,7 +23,7 @@ FIXTURE_PKG = "org.enterthefield.phiosmobile.citarget"
 PKG = "org.enterthefield.phiosmobile"
 COMPONENT = PKG + "/.MainActivity"
 RESULTS = []
-STARTUP_EVIDENCE = {"attempts": 0, "initialUiDelay": False, "classification": None}
+STARTUP_EVIDENCE = {"attempts": 0, "initialUiDelay": False, "classification": None, "stockPixelLauncherAnrDismissed": False}
 ROLE_EVIDENCE = {
     "attempted": False, "restored": False, "originalPackage": None,
     "initialRoleHolders": [], "stockPackage": None, "stockComponent": None,
@@ -144,6 +144,35 @@ def launcher_has_foreground(activity):
                for line in activity.splitlines())
 
 
+def stock_launcher_anr_close_button(nodes, window_dump):
+    """Allow one recovery ONLY for the Android stock Pixel Launcher ANR overlay.
+
+    The ANR title in the UI must match the stock launcher AND the actual
+    focused system window must name its package. Never close an ANR belonging
+    to PhiOS, another app, or a merely similar-looking fake dialog.
+    """
+    focused = any(
+        re.search(r"mFocusedWindow=.*Application Not Responding:\s*"
+                  r"com\.google\.android\.apps\.nexuslauncher(?:\s|}|$)", line)
+        for line in window_dump.splitlines()
+    )
+    if not focused:
+        return None
+    title = any(n.attrib.get("text", "") == "Pixel Launcher isn't responding"
+                and n.attrib.get("resource-id", "") == "android:id/alertTitle"
+                for n in nodes)
+    if not title:
+        return None
+    candidates = [
+        n for n in nodes
+        if n.attrib.get("text", "") == "Close app"
+        and n.attrib.get("resource-id", "") == "android:id/aerr_close"
+        and n.attrib.get("class", "") == "android.widget.Button"
+        and n.attrib.get("package", "") == "android"
+    ]
+    return candidates[0] if len(candidates) == 1 else None
+
+
 def startup_diagnostics(attempt):
     """Capture enough evidence to distinguish a wrong foreground from a crash."""
     activity = adb("shell", "dumpsys", "activity", "activities", check=False)
@@ -188,10 +217,22 @@ def launch():
             demand(detail["processRunning"],
                    "PhiOS process absent after Android start; see startup diagnostics")
             if detail["launcherResumed"]:
-                # A resumed Activity can precede a usable accessibility tree,
-                # especially during the first Google Play emulator boot.
-                # Observe the SAME foreground activity briefly; never relaunch
-                # or suppress a persistent missing-UI failure.
+                # A stock Pixel Launcher crash/ANR can present a SYSTEM dialog
+                # over an otherwise running PhiOS activity. Confirm both the
+                # system overlay and exact focused stock-launcher package.
+                # This is only a disposable emulator, never a user's phone.
+                current_nodes = xml_snapshot("home-overlay-check-" + str(attempt))
+                window_dump = (OUT / ("startup-attempt-" + str(attempt)
+                                     + "-windows.txt")).read_text()
+                close_stock = stock_launcher_anr_close_button(current_nodes, window_dump)
+                if close_stock is not None:
+                    screenshot("stock-pixel-launcher-anr-" + str(attempt))
+                    adb("shell", "input", "tap", *coordinates(close_stock))
+                    STARTUP_EVIDENCE["stockPixelLauncherAnrDismissed"] = True
+                    print("DISMISSED verified stock Pixel Launcher ANR overlay", flush=True)
+                    time.sleep(2)
+                # A resumed Activity can also precede a usable accessibility
+                # tree. Observe the SAME PhiOS instance, without relaunching.
                 try:
                     nodes = visible("PHIOS MOBILE", "home-settled-" + str(attempt), tries=7)
                     STARTUP_EVIDENCE["initialUiDelay"] = True
