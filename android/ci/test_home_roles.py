@@ -49,7 +49,7 @@ class HomeRoleParsingTests(unittest.TestCase):
              "org.enterthefield.phiosmobile/.MainActivity"),
             ("com.random.fake", "com.random.fake/.Home"),
         ]
-        self.assertIsNone(smoke.choose_stock_home(choices, {"com.random.fake"}, []))
+        self.assertIsNone(smoke.choose_stock_home(choices, {"com.android.launcher3"}, []))
 
     def test_original_holder_must_be_qualified_candidate(self):
         choices = [("com.android.launcher3", "com.android.launcher3/.Launcher")]
