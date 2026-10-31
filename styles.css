@@ -75,3 +75,18 @@ button,input,textarea{font:inherit}button{cursor:pointer}button:focus-visible,a:
 @media(max-width:360px){.section-actions{gap:6px}.section-actions span{display:none}.top-actions{gap:4px}.app-tile{padding:9px}.brand{font-size:14px}.quick-panel{padding-inline:16px}}
 @media(max-width:480px){.quick-panel{padding-top:calc(54px + env(safe-area-inset-top))}}
 @media(max-height:620px){.quick-panel{padding-top:20px}.surf-hint{margin:2px 0}.surf-heading p:last-child{margin-bottom:5px}}
+
+/* Operator Passport Rung 4: optional decoration, never system capability. */
+.operator-home-label { display:inline-block;margin:14px 0 4px;color:var(--accent);font-size:10px;letter-spacing:.11em;font-weight:800 }
+.operator-mobile {padding:20px 0 12px;margin-top:20px;border-top:1px solid var(--line)}
+.operator-mobile h2 {font-size:21px;margin:9px 0}
+.operator-mobile .subhead {font-size:12px;line-height:1.65}
+.operator-mobile input[type=file] {max-width:100%;font-size:12px}
+.operator-mobile-actions {display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
+.operator-mobile-actions button {margin:0}
+.operator-mobile-actions button:disabled {opacity:.38;cursor:not-allowed}
+.operator-mobile .external-link {display:inline-block;margin-top:6px}
+html.operator-halo .phi-emblem {text-shadow:0 0 18px var(--accent),0 0 45px var(--accent);filter:brightness(1.24)}
+html.operator-halo .hero-card {box-shadow:0 0 0 2px rgba(var(--accent-rgb),.5),0 0 38px rgba(var(--accent-rgb),.25)}
+html.operator-halo .brand-mark {text-shadow:0 0 18px var(--accent)}
+html.reduce-motion.operator-halo .hero-card {animation:none}

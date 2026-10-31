@@ -3,12 +3,14 @@ import {
   serializeBackup, parseBackup
 } from "./core.mjs";
 import { initLivingShell } from "./living.mjs";
+import { createPortablePassportStore, parsePortablePassport } from "./operator-passport.mjs";
 
 const byId = (id) => document.getElementById(id);
 const storage = (() => {
   try { return window.localStorage; } catch { return null; }
 })();
 let state = loadState(storage);
+const operator = createPortablePassportStore({ storage });
 let activeScreen = "home";
 let previousFocus = null;
 let toastTimer;
@@ -37,6 +39,19 @@ function paintPreferences() {
   byId("motion-toggle").checked = state.reducedMotion;
 }
 
+function paintOperator() {
+  const summary = operator.snapshot();
+  const halo = operator.hasBenefit("phios-mobile-halo");
+  document.documentElement.classList.toggle("operator-halo", halo);
+  byId("operator-progress").textContent = summary.imported
+    ? "Standard rank " + summary.clearedRank + " / 6 • " +
+      (halo ? "Operator halo unlocked" : "More cosmetic rewards available at rank 2")
+    : "No Passport imported. All mobile features are still available.";
+  byId("operator-home-label").textContent = halo ? "✳ OPERATOR HALO ACTIVE" :
+    summary.imported ? "OPERATOR RANK " + summary.clearedRank : "OPERATOR PASSPORT OPTIONAL";
+  byId("operator-export").disabled = !summary.imported;
+  byId("operator-remove").disabled = !summary.imported;
+}
 function updateNote() {
   byId("note-input").value = state.note;
   byId("note-count").textContent = state.note.length.toLocaleString() + " / " + NOTE_LIMIT.toLocaleString();
@@ -233,6 +248,51 @@ byId("erase-button").addEventListener("click", () => {
   showToast(success ? "Local PhiOS Mobile data erased." : "Local storage could not be cleared.");
 });
 
+byId("operator-import").addEventListener("change", async (event) => {
+  const input = event.target;
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) return;
+  try {
+    if (file.size > 16384) throw new TypeError("Passport exceeds 16 KiB.");
+    const text = await file.text();
+    const validated = parsePortablePassport(text);
+    const rank = validated.results.filter(r => r.mode === "standard").length;
+    if (!window.confirm(
+      "Import a PhiOperator Passport with " + rank +
+      " recorded Standard rank result(s)? This replaces only this PWA's imported Passport."
+    )) return;
+    const result = operator.importJSON(text);
+    paintOperator();
+    showToast(result.persisted
+      ? "Operator Passport imported locally."
+      : "Passport loaded for this session. Export a backup to keep it.");
+  } catch (error) {
+    showToast("Import rejected: " + error.message);
+  }
+});
+byId("operator-export").addEventListener("click", () => {
+  const content = operator.exportJSON();
+  if (!content) return;
+  const url = URL.createObjectURL(new Blob([content], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "phioperator-passport-v1.json";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast("Operator Passport copy exported.");
+});
+byId("operator-remove").addEventListener("click", () => {
+  if (!operator.snapshot().imported) return;
+  if (!window.confirm(
+    "Remove this PWA's imported Operator Passport? Notes, Vault and settings stay intact."
+  )) return;
+  operator.clear();
+  paintOperator();
+  showToast("Imported Operator Passport removed.");
+});
 byId("refresh-pulse").addEventListener("click", updatePulse);
 window.addEventListener("online", updatePulse);
 window.addEventListener("offline", updatePulse);
@@ -248,6 +308,7 @@ async function registerOfflineShell() {
 }
 
 paintPreferences();
+paintOperator();
 updateNote();
 updateClock();
 updatePulse();

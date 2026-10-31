@@ -36,6 +36,7 @@
             <div class="phi-emblem" aria-hidden="true">Φ</div>
             <h2 id="home-title">A different kind of mobile.</h2>
             <p>Local first. No mandatory account. No pretend system privileges.</p>
+            <span id="operator-home-label" class="operator-home-label">OPERATOR PASSPORT OPTIONAL</span>
             <button type="button" class="text-action" id="home-surf">Enter PhiSurf <span aria-hidden="true">↗</span></button>
           </div>
           <div class="section-label"><span>YOUR APPS</span><div class="section-actions"><span>06 / LOCAL SHELL</span><button type="button" id="customize-home" aria-expanded="false" aria-controls="home-editor">CUSTOMIZE ↗</button></div></div>
@@ -106,6 +107,20 @@
           <label class="setting-line" for="hero-toggle"><span><strong>Show welcome card</strong><small>Hide the hero to see apps sooner</small></span><input id="hero-toggle" type="checkbox"></label>
           <label class="setting-line" for="compact-toggle"><span><strong>Compact app grid</strong><small>Fit more in one view</small></span><input id="compact-toggle" type="checkbox"></label>
           <label class="setting-line" for="motion-toggle"><span><strong>Reduce motion</strong><small>Disable decorative transitions</small></span><input id="motion-toggle" type="checkbox"></label>
+          <section class="operator-mobile" aria-labelledby="operator-mobile-title">
+            <p class="eyebrow">OPTIONAL / UNIVERSAL OPERATOR PASSPORT</p>
+            <h2 id="operator-mobile-title">Operator Passport</h2>
+            <p class="subhead">Export your PhiOperator JSON, then import it here. Rank 2 adds a decorative signal halo. Nothing unlocks Android or system permissions.</p>
+            <p id="operator-progress" class="inline-status" role="status">No Passport imported.</p>
+            <label class="field-label" for="operator-import">IMPORT PASSPORT JSON (16 KiB max)</label>
+            <input id="operator-import" type="file" accept=".json,application/json">
+            <div class="operator-mobile-actions">
+              <button id="operator-export" type="button" class="ghost-button" disabled>Export copy</button>
+              <button id="operator-remove" type="button" class="ghost-button" disabled>Remove import</button>
+            </div>
+            <a class="external-link" href="https://michaelwave369.github.io/PhiOperator/" target="_blank" rel="noopener noreferrer">OPEN PHIOPERATOR ↗</a>
+            <p class="micro-copy">This is editable game progress, never an identity, security credential or authorization. No automatic cross-site transfer.</p>
+          </section>
           <p class="foot-note">System-wide Android settings are not available from this browser demonstration.</p>
         </section>
 
