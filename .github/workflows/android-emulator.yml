@@ -50,8 +50,10 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
           test -w /dev/kvm
-      - name: Verify emulator smoke script syntax
-        run: python3 -m py_compile android/ci/emulator_smoke.py
+      - name: Verify emulator smoke script syntax and role parsers
+        run: |
+          python3 -m py_compile android/ci/emulator_smoke.py android/ci/test_home_roles.py
+          PYTHONPATH=android/ci python3 -m unittest -v android/ci/test_home_roles.py
       - name: Boot emulator and exercise native launcher
         uses: reactivecircus/android-emulator-runner@v2
         with:
