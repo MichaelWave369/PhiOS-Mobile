@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#090e1a">
-  <meta name="description" content="PhiOS Mobile Rung 1: a local-first, offline-capable mobile shell prototype.">
+  <meta name="description" content="Explore PhiOS Mobile: a local-first browser shell plus a separately tested native Android launcher. Not phone firmware.">
   <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
   <script type="module" src="./src/main.js"></script>
-  <title>ΦOS Mobile | Rung 1.1</title>
+  <title>ΦOS Mobile | Browser Demo + Android Launcher</title>
 </head>
 <body>
   <div class="background-grid" aria-hidden="true"></div>
@@ -22,7 +22,7 @@
       </header>
 
       <div class="topbar">
-        <div class="brand"><span class="brand-mark">Φ</span><span>PHIOS<span class="brand-light"> MOBILE</span><small>RUNG 1.1 · LIVING SHELL</small></span></div>
+        <div class="brand"><span class="brand-mark">Φ</span><span>PHIOS<span class="brand-light"> MOBILE</span><small>WEB DEMO 1.1 · ANDROID 2.4</small></span></div>
         <div class="top-actions"><button type="button" class="circle-action quick-action" id="open-quick" aria-label="Open local quick settings" aria-haspopup="dialog" aria-controls="quick-panel">☷</button><button type="button" class="circle-action" id="open-surf-top" aria-label="Open PhiSurf quick navigation" aria-haspopup="dialog" aria-controls="phisurf">✳</button></div>
       </div>
 
@@ -39,6 +39,20 @@
             <span id="operator-home-label" class="operator-home-label">OPERATOR PASSPORT OPTIONAL</span>
             <button type="button" class="text-action" id="home-surf">Enter PhiSurf <span aria-hidden="true">↗</span></button>
           </div>
+          <section class="native-track" aria-labelledby="native-track-title">
+            <div class="native-track-head">
+              <span class="micro-label">TWO TRACKS / ONE SOVEREIGN VISION</span>
+              <span class="native-track-chip">ANDROID · RUNG 2.4</span>
+            </div>
+            <h2 id="native-track-title">The native launcher is here.</h2>
+            <p>Beyond this web demo: a real, user-selectable Android Home app with PhiSurf, pinned apps, and local backup. Verified on an Android 15 emulator, not yet a daily-driver phone OS.</p>
+            <div class="native-track-steps" aria-label="Native Android milestones">
+              <span>01 / Home launcher</span>
+              <span>02 / Backup verified</span>
+              <span>03 / APK test bundle</span>
+            </div>
+            <button type="button" class="native-track-more" data-open="about">Explore Android progress <span aria-hidden="true">↗</span></button>
+          </section>
           <div class="section-label"><span>YOUR APPS</span><div class="section-actions"><span>06 / LOCAL SHELL</span><button type="button" id="customize-home" aria-expanded="false" aria-controls="home-editor">CUSTOMIZE ↗</button></div></div>
           <div class="app-grid" id="app-grid">
             <button type="button" class="app-tile" data-shortcut="notes" data-open="notes"><span class="app-icon">✎</span><span>Notes</span><small>Local</small></button>
@@ -128,8 +142,27 @@
           <p class="eyebrow">05 / THE OPERATING PRINCIPLE</p><h1 id="about-title">PhiOS Mobile</h1>
           <div class="about-emblem" aria-hidden="true">Φ</div>
           <h2>Capability is not authority.</h2>
-          <p class="subhead">A mobile expression of the PhiOS sovereignty contract, built as a verifiable, offline-first browser shell before experimenting with Android firmware.</p>
-          <div class="stat-list"><div><span>Milestone</span><strong>Rung 1.1</strong></div><div><span>Implementation</span><strong>Web / PWA</strong></div><div><span>Android distribution</span><strong>Not built</strong></div><div><span>Device qualification</span><strong>None</strong></div></div>
+          <p class="subhead">One project, two separate experiences. You're currently using the browser/PWA demo. The native Android launcher is a distinct APK, not embedded into this website.</p>
+          <section class="track-detail" aria-labelledby="browser-track-heading">
+            <div class="track-detail-heading"><span class="track-tag">LIVE HERE</span><span class="micro-label">WEB / RUNG 1.1</span></div>
+            <h3 id="browser-track-heading">Browser shell</h3>
+            <p>Local notes, Vault backup, touch navigation, PhiSurf, display settings and optional cosmetic PhiOperator Passport. Runs in this browser, with no Android system privileges.</p>
+          </section>
+          <section class="track-detail native-detail" aria-labelledby="android-track-heading">
+            <div class="track-detail-heading"><span class="track-tag">EMULATOR VERIFIED</span><span class="micro-label">ANDROID / RUNG 2.4</span></div>
+            <h3 id="android-track-heading">Native Android Home launcher</h3>
+            <p>Separate, user-selectable Android launcher with real installed-app launching, pinned shelf, PhiSurf, and JSON profile backup/restore. The actual Android DocumentsUI save/restore flow and original Home rollback passed API 35 emulator tests.</p>
+            <div class="native-track-steps" aria-label="Verified native milestones">
+              <span>Home + app launch</span><span>Local backup/restore</span><span>APK provenance</span>
+            </div>
+            <p class="track-warning">Debug test APK only. Not a flashable ROM, production release, or qualified emergency/daily-driver phone replacement. No physical-device testing claimed.</p>
+            <div class="track-actions">
+              <a class="track-link" href="https://github.com/MichaelWave369/PhiOS-Mobile/actions/workflows/android-native.yml" target="_blank" rel="noopener noreferrer">Find test APK ↗</a>
+              <a class="track-link" href="https://github.com/MichaelWave369/PhiOS-Mobile/blob/main/docs/ANDROID_APK_TESTING.md" target="_blank" rel="noopener noreferrer">Test instructions ↗</a>
+              <a class="track-link" href="https://github.com/MichaelWave369/PhiOS-Mobile/actions/workflows/android-emulator.yml" target="_blank" rel="noopener noreferrer">Emulator evidence ↗</a>
+            </div>
+          </section>
+          <p class="micro-copy">Native milestone reference: merged PR #11. These labels describe verified project work, not real-time CI or installed-device status.</p>
           <a class="external-link" href="https://github.com/MichaelWave369/PhiOS-Mobile" target="_blank" rel="noopener noreferrer">Explore source ↗</a>
         </section>
       </div>
@@ -178,6 +211,6 @@
       <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
     </div>
   </main>
-  <p class="desktop-caption">ΦOS MOBILE · RUNG 1.1 · BROWSER SHELL / NO PHONE FIRMWARE</p>
+  <p class="desktop-caption">ΦOS MOBILE · WEB DEMO 1.1 + ANDROID LAUNCHER 2.4 · NOT PHONE FIRMWARE</p>
 </body>
 </html>
