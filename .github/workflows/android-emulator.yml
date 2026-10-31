@@ -1,7 +1,9 @@
 name: Android Emulator Smoke
 on:
   push:
-    branches: [main, "feat/**", "test/**"]
+    # Branch changes are tested by pull_request below. Only main gets a
+    # post-merge push run, avoiding duplicate push/PR emulator jobs.
+    branches: [main]
     paths:
       - "android/**"
       - ".github/workflows/android-emulator.yml"
@@ -75,8 +77,8 @@ jobs:
           ls -l /dev/kvm
       - name: Verify emulator smoke script syntax and role parsers
         run: |
-          python3 -m py_compile android/ci/emulator_smoke.py android/ci/test_home_roles.py
-          PYTHONPATH=android/ci python3 -m unittest -v android/ci/test_home_roles.py
+          python3 -m py_compile android/ci/emulator_smoke.py android/ci/test_home_roles.py android/ci/test_launch_readiness.py
+          PYTHONPATH=android/ci python3 -m unittest -v android/ci/test_home_roles.py android/ci/test_launch_readiness.py
       - name: Boot emulator and exercise native launcher
         uses: reactivecircus/android-emulator-runner@v2
         with:

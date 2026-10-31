@@ -2,6 +2,10 @@
 
 **Scope:** An ordinary, user-selectable Android HOME app for test devices and emulator. This project does not replace, unlock, root, flash, modify, or bypass Android firmware.
 
+## Rung 2.1c: Reliable emulator startup verification
+
+The API 35 emulator smoke test now distinguishes first-boot focus delays from genuine PhiOS launcher failures. It wakes the disposable emulator, retries only when PhiOS remains running but is not the resumed foreground Activity, and records Android activity/window diagnostics, screenshots, launcher startup attempts and an APK-identified JSON receipt. A crash, terminated process or resumed launcher without its UI **fails immediately**. It does not hide runtime failures or change physical device behavior.
+
 ## Rung 2.1b: Pinned Shelf and real launch proof
 
 - A native scrollable **Pinned Shelf** above the app list, populated only from installed launcher activities that the user has pinned
