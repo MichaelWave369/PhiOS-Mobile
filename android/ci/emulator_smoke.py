@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Black-box Android emulator smoke, without changing the default Home app.
+"""Black-box Android emulator smoke with a reversible HOME-role test.
 
 A PASS proves only these limited behaviors on the specific disposable emulator.
 It is not physical-device, accessibility, emergency-call, or ROM qualification.
@@ -21,7 +21,11 @@ APK = ROOT / "android/app/build/outputs/apk/debug/app-debug.apk"
 PKG = "org.enterthefield.phiosmobile"
 COMPONENT = PKG + "/.MainActivity"
 RESULTS = []
-ROLE_EVIDENCE = {"attempted": False, "restored": False, "originalPackage": None}
+ROLE_EVIDENCE = {
+    "attempted": False, "restored": False, "originalPackage": None,
+    "initialRoleHolders": [], "stockPackage": None, "stockComponent": None,
+    "baselineSeeded": False, "stockRestored": False,
+}
 
 
 def cmd(*args, timeout=60, check=True):
@@ -178,42 +182,114 @@ def layout_preferences():
     visible("A different kind of mobile.", "layout-restored")
     screenshot("08-layout-restored")
 
+def role_holders(output):
+    """Parse only Android package names; empty output is a valid unassigned role."""
+    return re.findall(r"[A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)+", output)
+
+
+def home_candidates(output):
+    """Identify concrete package/activity components, ignoring resolver headings."""
+    pairs = re.findall(
+        r"([A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)+)/([.$A-Za-z_][.$A-Za-z_0-9]*)",
+        output,
+    )
+    return list(dict.fromkeys((package, package + "/" + activity) for package, activity in pairs))
+
+
+def choose_stock_home(candidates, system_packages, original_holders):
+    """Use a qualified installed system HOME candidate, never PhiOS or a resolver."""
+    available = [
+        (pkg, component) for pkg, component in candidates
+        if pkg in system_packages and pkg != PKG
+        and "fallback" not in pkg.lower()
+        and "setup" not in pkg.lower()
+    ]
+    if original_holders:
+        choices = [(pkg, component) for pkg, component in available if pkg in original_holders]
+        return choices[0] if choices else None
+    launchers = [candidate for candidate in available if "launcher" in candidate[0].lower()]
+    return (launchers or available)[0] if available else None
+
+
+def current_home_holders():
+    # Explicit user 0: the disposable emulator's current/main Android user.
+    raw = adb("shell", "cmd", "role", "get-role-holders", "--user", "0",
+              "android.app.role.HOME")
+    return role_holders(raw)
+
+
+def await_role(expected, label):
+    for _ in range(8):
+        observed = current_home_holders()
+        if observed == expected:
+            return
+        time.sleep(1)
+    raise AssertionError(label + ": expected " + repr(expected)
+                         + ", observed " + repr(current_home_holders()))
+
+
 def home_role_roundtrip():
     role = "android.app.role.HOME"
-    before = adb("shell", "cmd", "role", "get-role-holders", role)
-    original = re.findall(r"[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+", before)
-    demand(len(original) == 1 and original[0] != PKG,
-           "Need exactly one pre-existing stock HOME package before changing role: " + before)
-    original_pkg = original[0]
-    ROLE_EVIDENCE["originalPackage"] = original_pkg
-    resolve_before = adb("shell", "cmd", "package", "resolve-activity", "--brief",
-                         "-a", "android.intent.action.MAIN",
-                         "-c", "android.intent.category.HOME")
-    original_component = next((line.strip() for line in reversed(resolve_before.splitlines())
-                               if line.strip().startswith(original_pkg + "/")), None)
-    demand(original_component is not None,
-           "Could not capture the exact original Home component for restoration: " + resolve_before)
+    initial = current_home_holders()
+    demand(len(initial) <= 1 and PKG not in initial,
+           "Unexpected existing HOME role state; refusing modification: " + repr(initial))
+
+    query = adb("shell", "cmd", "package", "query-activities", "--components",
+                "-a", "android.intent.action.MAIN", "-c", "android.intent.category.HOME")
+    candidates = home_candidates(query)
+    system_packages = set(
+        name.removeprefix("package:").strip()
+        for name in adb("shell", "pm", "list", "packages", "-s").splitlines()
+        if name.startswith("package:")
+    )
+    stock = choose_stock_home(candidates, system_packages, initial)
+    demand(stock is not None,
+           "No verified system HOME candidate to restore; refusing switch. Candidates: "
+           + repr(candidates))
+    stock_pkg, stock_component = stock
+    ROLE_EVIDENCE["originalPackage"] = initial[0] if initial else None
+    ROLE_EVIDENCE["initialRoleHolders"] = initial
+    ROLE_EVIDENCE["stockPackage"] = stock_pkg
+    ROLE_EVIDENCE["stockComponent"] = stock_component
+    ROLE_EVIDENCE["baselineSeeded"] = not bool(initial)
+    (OUT / "home-candidates.txt").write_text(
+        "Initial HOME holders: " + repr(initial) + "\n"
+        + "HOME candidates:\n" + query + "\n"
+        + "Selected system HOME: " + stock_component + "\n"
+    )
+
+    # Some fresh Android emulator images have *no* assigned HOME role. That's a
+    # valid state, not a broken installation. Seed a known stock launcher ONLY
+    # on this disposable emulator so reversible role switching can be tested.
+    # Finally clear the role again if it was initially empty, preserving state.
+    attempted_baseline = False
     try:
+        if not initial:
+            attempted_baseline = True
+            adb("shell", "cmd", "package", "set-home-activity", stock_component)
+            await_role([stock_pkg], "Seeding stock HOME before switch")
         ROLE_EVIDENCE["attempted"] = True
         adb("shell", "cmd", "package", "set-home-activity", COMPONENT)
-        changed = adb("shell", "cmd", "role", "get-role-holders", role)
-        demand(PKG in changed, "PhiOS Mobile was not assigned HOME role: " + changed)
+        await_role([PKG], "Assigning PhiOS HOME")
         adb("shell", "input", "keyevent", "KEYCODE_HOME")
         visible("PHIOS MOBILE", "home-role-switched")
         screenshot("09-phi-default-home")
     finally:
-        try:
-            adb("shell", "cmd", "role", "add-role-holder", role, original_pkg)
-        except RuntimeError as error:
-            print("Role restoration attempt failed; trying original component:", error, flush=True)
-        current = adb("shell", "cmd", "role", "get-role-holders", role, check=False)
-        if original_pkg not in current or PKG in current:
-            adb("shell", "cmd", "package", "set-home-activity", original_component)
-        restored = adb("shell", "cmd", "role", "get-role-holders", role)
-        ROLE_EVIDENCE["restored"] = original_pkg in restored and PKG not in restored
-        demand(ROLE_EVIDENCE["restored"], "Original default HOME was not restored: " + restored)
-        adb("shell", "input", "keyevent", "KEYCODE_HOME")
-        screenshot("10-stock-home-restored")
+        if ROLE_EVIDENCE["attempted"] or attempted_baseline:
+            # Recovery does not depend on the prior assertion succeeding.
+            try:
+                adb("shell", "cmd", "package", "set-home-activity", stock_component)
+                await_role([stock_pkg], "Recovering system stock launcher")
+                ROLE_EVIDENCE["stockRestored"] = True
+                adb("shell", "input", "keyevent", "KEYCODE_HOME")
+                screenshot("10-stock-home-restored")
+            finally:
+                # A fresh emulator with no holder must finish with no holder,
+                # not a falsely described 'original' launcher selection.
+                if not initial:
+                    adb("shell", "cmd", "role", "clear-role-holders", "--user", "0", role)
+                await_role(initial, "Restoring original HOME role state")
+                ROLE_EVIDENCE["restored"] = True
 
 def evidence():
     try:
@@ -233,6 +309,10 @@ def evidence():
         "fingerprint": adb("shell", "getprop", "ro.build.fingerprint", check=False).strip(),
         "apkSha256": hashlib.sha256(APK.read_bytes()).hexdigest() if APK.exists() else None,
         "defaultHomeChanged": ROLE_EVIDENCE["attempted"],
+        "initialHomeRoleHolders": ROLE_EVIDENCE["initialRoleHolders"],
+        "baselineStockHomeSeeded": ROLE_EVIDENCE["baselineSeeded"],
+        "stockLauncherComponent": ROLE_EVIDENCE["stockComponent"],
+        "stockHomeRecovered": ROLE_EVIDENCE["stockRestored"],
         "defaultHomeRestored": ROLE_EVIDENCE["restored"],
         "originalHomePackage": ROLE_EVIDENCE["originalPackage"],
         "physicalDeviceTested": False,
