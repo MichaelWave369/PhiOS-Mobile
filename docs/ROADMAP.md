@@ -34,6 +34,13 @@ All statuses below describe narrow engineering evidence. CI compile success does
 - [ ] Test real HOME selection/rollback in a separate controlled test
 - [ ] Test a specifically named spare physical device
 
+## Rung 2.1a: Native layout and reversible HOME gate (this PR)
+- [x] Local native layout preferences for clock, welcome card and compact app rows
+- [x] Emulator black-box tests for layout persistence and reset
+- [x] Emulator HOME selection and mandatory stock HOME restoration test
+- [ ] Review green emulator run, screenshot artifacts and receipt for this exact commit
+- [ ] Real-device testing and accessibility remain unqualified
+
 ## Rung 2.1: Native UX and explicit optional capabilities
 - Enhance native home layout, widgets, shortcuts and bounded quick controls
 - Consider notification access only with independent opt-in and revoke instructions

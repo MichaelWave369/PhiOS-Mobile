@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Black-box Android emulator smoke, without changing the default Home app.
+"""Black-box Android emulator smoke with a reversible HOME-role test.
 
 A PASS proves only these limited behaviors on the specific disposable emulator.
 It is not physical-device, accessibility, emergency-call, or ROM qualification.
@@ -21,6 +21,12 @@ APK = ROOT / "android/app/build/outputs/apk/debug/app-debug.apk"
 PKG = "org.enterthefield.phiosmobile"
 COMPONENT = PKG + "/.MainActivity"
 RESULTS = []
+ROLE_EVIDENCE = {
+    "attempted": False, "restored": False, "originalPackage": None,
+    "initialRoleHolders": [], "stockPackage": None, "stockComponent": None,
+    "baselineSeeded": False, "stockRestored": False,
+}
+
 
 def cmd(*args, timeout=60, check=True):
     r = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
@@ -151,6 +157,140 @@ def pin():
     visible("★ Pinned", "pinned-filter")
     screenshot("06-pinned-filter")
 
+
+def layout_preferences():
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("Layout", "layout-before")
+    tap(nodes, "Layout")
+    nodes = visible("Home layout", "layout-dialog")
+    demand(locate(nodes, "Show welcome card") is not None, "Welcome preference absent")
+    demand(locate(nodes, "Compact app rows") is not None, "Compact preference absent")
+    tap(nodes, "Show welcome card")
+    nodes = visible("Save", "layout-save")
+    tap(nodes, "Save")
+    nodes = visible("PHIOS MOBILE", "layout-saved")
+    demand(locate(nodes, "A different kind of mobile.") is None, "Hero remained visible after disabling")
+    screenshot("07-layout-hero-hidden")
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("PHIOS MOBILE", "layout-reload")
+    demand(locate(nodes, "A different kind of mobile.") is None, "Home layout didn't persist")
+    tap(nodes, "Layout")
+    nodes = visible("Reset", "layout-reset")
+    tap(nodes, "Reset")
+    visible("A different kind of mobile.", "layout-restored")
+    screenshot("08-layout-restored")
+
+def role_holders(output):
+    """Parse only Android package names; empty output is a valid unassigned role."""
+    return re.findall(r"[A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)+", output)
+
+
+def home_candidates(output):
+    """Identify concrete package/activity components, ignoring resolver headings."""
+    pairs = re.findall(
+        r"([A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)+)/([.$A-Za-z_][.$A-Za-z_0-9]*)",
+        output,
+    )
+    return list(dict.fromkeys((package, package + "/" + activity) for package, activity in pairs))
+
+
+def choose_stock_home(candidates, system_packages, original_holders):
+    """Use a qualified installed system HOME candidate, never PhiOS or a resolver."""
+    available = [
+        (pkg, component) for pkg, component in candidates
+        if pkg in system_packages and pkg != PKG
+        and "fallback" not in pkg.lower()
+        and "setup" not in pkg.lower()
+    ]
+    if original_holders:
+        choices = [(pkg, component) for pkg, component in available if pkg in original_holders]
+        return choices[0] if choices else None
+    launchers = [candidate for candidate in available if "launcher" in candidate[0].lower()]
+    return (launchers or available)[0] if available else None
+
+
+def current_home_holders():
+    # Explicit user 0: the disposable emulator's current/main Android user.
+    raw = adb("shell", "cmd", "role", "get-role-holders", "--user", "0",
+              "android.app.role.HOME")
+    return role_holders(raw)
+
+
+def await_role(expected, label):
+    for _ in range(8):
+        observed = current_home_holders()
+        if observed == expected:
+            return
+        time.sleep(1)
+    raise AssertionError(label + ": expected " + repr(expected)
+                         + ", observed " + repr(current_home_holders()))
+
+
+def home_role_roundtrip():
+    role = "android.app.role.HOME"
+    initial = current_home_holders()
+    demand(len(initial) <= 1 and PKG not in initial,
+           "Unexpected existing HOME role state; refusing modification: " + repr(initial))
+
+    query = adb("shell", "cmd", "package", "query-activities", "--components",
+                "-a", "android.intent.action.MAIN", "-c", "android.intent.category.HOME")
+    candidates = home_candidates(query)
+    system_packages = set(
+        name.removeprefix("package:").strip()
+        for name in adb("shell", "pm", "list", "packages", "-s").splitlines()
+        if name.startswith("package:")
+    )
+    stock = choose_stock_home(candidates, system_packages, initial)
+    demand(stock is not None,
+           "No verified system HOME candidate to restore; refusing switch. Candidates: "
+           + repr(candidates))
+    stock_pkg, stock_component = stock
+    ROLE_EVIDENCE["originalPackage"] = initial[0] if initial else None
+    ROLE_EVIDENCE["initialRoleHolders"] = initial
+    ROLE_EVIDENCE["stockPackage"] = stock_pkg
+    ROLE_EVIDENCE["stockComponent"] = stock_component
+    ROLE_EVIDENCE["baselineSeeded"] = not bool(initial)
+    (OUT / "home-candidates.txt").write_text(
+        "Initial HOME holders: " + repr(initial) + "\n"
+        + "HOME candidates:\n" + query + "\n"
+        + "Selected system HOME: " + stock_component + "\n"
+    )
+
+    # Some fresh Android emulator images have *no* assigned HOME role. That's a
+    # valid state, not a broken installation. Seed a known stock launcher ONLY
+    # on this disposable emulator so reversible role switching can be tested.
+    # Finally clear the role again if it was initially empty, preserving state.
+    attempted_baseline = False
+    try:
+        if not initial:
+            attempted_baseline = True
+            adb("shell", "cmd", "package", "set-home-activity", stock_component)
+            await_role([stock_pkg], "Seeding stock HOME before switch")
+        ROLE_EVIDENCE["attempted"] = True
+        adb("shell", "cmd", "package", "set-home-activity", COMPONENT)
+        await_role([PKG], "Assigning PhiOS HOME")
+        adb("shell", "input", "keyevent", "KEYCODE_HOME")
+        visible("PHIOS MOBILE", "home-role-switched")
+        screenshot("09-phi-default-home")
+    finally:
+        if ROLE_EVIDENCE["attempted"] or attempted_baseline:
+            # Recovery does not depend on the prior assertion succeeding.
+            try:
+                adb("shell", "cmd", "package", "set-home-activity", stock_component)
+                await_role([stock_pkg], "Recovering system stock launcher")
+                ROLE_EVIDENCE["stockRestored"] = True
+                adb("shell", "input", "keyevent", "KEYCODE_HOME")
+                screenshot("10-stock-home-restored")
+            finally:
+                # A fresh emulator with no holder must finish with no holder,
+                # not a falsely described 'original' launcher selection.
+                if not initial:
+                    adb("shell", "cmd", "role", "clear-role-holders", "--user", "0", role)
+                await_role(initial, "Restoring original HOME role state")
+                ROLE_EVIDENCE["restored"] = True
+
 def evidence():
     try:
         screenshot("99-final")
@@ -168,7 +308,13 @@ def evidence():
         "model": adb("shell", "getprop", "ro.product.model", check=False).strip(),
         "fingerprint": adb("shell", "getprop", "ro.build.fingerprint", check=False).strip(),
         "apkSha256": hashlib.sha256(APK.read_bytes()).hexdigest() if APK.exists() else None,
-        "defaultHomeChanged": False,
+        "defaultHomeChanged": ROLE_EVIDENCE["attempted"],
+        "initialHomeRoleHolders": ROLE_EVIDENCE["initialRoleHolders"],
+        "baselineStockHomeSeeded": ROLE_EVIDENCE["baselineSeeded"],
+        "stockLauncherComponent": ROLE_EVIDENCE["stockComponent"],
+        "stockHomeRecovered": ROLE_EVIDENCE["stockRestored"],
+        "defaultHomeRestored": ROLE_EVIDENCE["restored"],
+        "originalHomePackage": ROLE_EVIDENCE["originalPackage"],
         "physicalDeviceTested": False,
         "tests": RESULTS,
         "outcome": "FAIL" if any(t["result"] == "FAIL" for t in RESULTS) else "PASS",
@@ -187,6 +333,8 @@ def main():
             ("Exercise PhiSurf and status", surf_status),
             ("Filter installed apps", search),
             ("Pin app and verify persistence", pin),
+            ("Home layout survives restart and reset", layout_preferences),
+            ("Temporarily select PhiOS HOME and restore stock HOME", home_role_roundtrip),
         ]:
             step(name, fn)
     except Exception:
