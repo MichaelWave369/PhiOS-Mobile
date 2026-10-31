@@ -20,7 +20,7 @@ The versioned JSON contains only pinned launcher component identifiers and four 
 
 Imported documents have a 64 KiB hard cap and at most 256 pinned IDs. The codec checks schema/version, field types, valid UTF-8, duplicate IDs, and component identifier format. IDs for apps not installed on the receiving device are **skipped**, never installed or launched. A confirmation preview shows what will be restored, and cancelling leaves the current settings unchanged. Restoration updates only the existing native pins and layout.
 
-The JSON codec has JVM regression tests, and emulator CI verifies the native menu exists. A full OS-document-provider save/open round trip, screen-reader qualification and spare physical-device testing remain pending.
+The JSON codec has JVM regression tests, and emulator CI verifies the native menu exists. The Android 15 API 35 emulator's actual Downloads document-provider round trip, cancellation, confirmation and persistence passed on merged PR #10. Screen-reader qualification, alternate document providers and spare physical-device testing remain pending.
 
 ## Rung 2.1b: Pinned Shelf and real launch proof
 
@@ -55,7 +55,7 @@ No Android notification, Internet, SMS, call, or system-setting privileges were 
 - Unit tests for the query and six-sector PhiSurf mapping
 - Java source only, no AndroidX or external runtime libraries
 
-**This is not a production-ready daily driver launcher.** It has not been emulator-tested or qualified on a physical phone. Android owns the lock screen, calls, emergency services, notifications, cellular connectivity, security and boot behavior. Notification integration is a later opt-in milestone, not implemented here.
+**This is not a production-ready daily driver launcher.** Its selected native behaviors have passed the API 35 disposable emulator CI; it has not been qualified on a physical phone. Android owns the lock screen, calls, emergency services, notifications, cellular connectivity, security and boot behavior. Notification integration is a later opt-in milestone, not implemented here.
 
 ## Rung 2.4: Debug APK evidence and safe test handoff
 
@@ -90,7 +90,7 @@ The \`Android Native Launcher\` GitHub Actions workflow builds and tests on GitH
 
 ## Data and privacy
 
-The only user state stored is a set of pinned component identifiers in private Android SharedPreferences. No contact, message, call, location or telemetry collection. Cloud app backup is opted out through the manifest and extraction rules. This is **not** a validated export/restore scheme. The browser PWA's notes and preferences remain separate: native/web synchronization and import are NOT implemented.
+The native launcher stores pinned component identifiers and four Home layout preferences in private Android SharedPreferences. No contact, message, call, location or telemetry collection. Cloud app backup is opted out through the manifest and extraction rules. The versioned native JSON export and restore flow has passed the tested API 35 emulator's system document-provider round trip, but other providers and physical devices are unqualified. The browser PWA's notes and preferences remain separate: native/web synchronization and import are NOT implemented.
 
 There is no installer, root helper, system image, OTA updater, bootloader step or automatic Home selection.
 
