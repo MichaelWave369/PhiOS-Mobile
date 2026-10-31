@@ -74,3 +74,15 @@ Check the exact pull-request HEAD SHA for the pre-merge gate and the main merge 
 - [ ] Confirm Android default Home role remains unchanged
 - [ ] Verify no new Android app/storage/network permission and no PWA/Passport migration
 - [ ] Check document-picker provider behavior on emulator and spare device
+
+## Rung 2.3: Real DocumentsUI acceptance evidence
+- [ ] Select Downloads in Android system create-document picker
+- [ ] Save a profile to local storage and inspect actual exported file bytes
+- [ ] Confirm schema, exact layout types and pinned fixture ID
+- [ ] Unpin test app and change visible welcome card before import
+- [ ] Open same file through the Android open-document picker
+- [ ] Cancel preview and verify changed state was not overwritten
+- [ ] Confirm preview and verify saved pin/layout return and persist after process restart
+- [ ] Ensure existing app launch, permissions and default Home rollback checks still pass
+- [ ] Retain APK hash, DocumentsUI screenshots/XML and JSON receipt
+- [ ] Record provider-specific behavior as emulator-only, not OEM/device qualification
