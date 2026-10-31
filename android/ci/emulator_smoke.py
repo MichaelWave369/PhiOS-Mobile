@@ -457,6 +457,19 @@ def select_document_filename(nodes, filename):
     return choices[0]
 
 
+def select_dialog_button(nodes, label):
+    """Select a dialog action, not a title or explanatory string containing it."""
+    choices = [
+        node for node in nodes
+        if node.attrib.get("class", "") == "android.widget.Button"
+        and node.attrib.get("text", "").strip().casefold() == label.casefold()
+    ]
+    demand(len(choices) == 1,
+           "Expected exactly one dialog button '" + label
+           + "', got " + str(len(choices)))
+    return choices[0]
+
+
 def import_exported_document(stage):
     open_profile_menu_action("Import from JSON", stage)
     nodes = document_picker_downloads(stage + "-picker")
@@ -523,7 +536,7 @@ def document_provider_roundtrip():
     # Import the exact file exported via the DocumentsUI provider.
     nodes = import_exported_document("document-import-confirm")
     screenshot("08d-import-preview-confirm")
-    tap(nodes, "Restore")
+    adb("shell", "input", "tap", *coordinates(select_dialog_button(nodes, "Restore")))
     visible("A different kind of mobile.", "document-restored-hero", tries=7)
     visible("Open PhiOS CI Target from pinned shelf", "document-restored-pin")
     adb("shell", "am", "force-stop", PKG)
