@@ -4,6 +4,12 @@
 
 PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1.1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
 
+## Rung 2.5: Native real-device readiness (PR under review)
+
+Native launcher usability now includes an explicit focusable **Pin / Unpin** control alongside long-press, an always-labeled **Home help** button showing reversible stock-launcher instructions, and adaptive layout for narrow displays or large system fonts. On tight displays, Home becomes scrollable so controls and the app list cannot silently fall off the screen. The emulator qualification adds UI observations at a narrow resolution and enlarged text scale, plus checks that display settings are restored.
+
+**No physical device, screen reader, or daily-driver compatibility has yet been qualified.** Follow the [spare Android device acceptance protocol](docs/ANDROID_SPARE_DEVICE_QUALIFICATION.md), starting with a test phone that retains a working stock Home. This is still an Android Home app, not a flashable ROM.
+
 ## GitHub Pages now shows both tracks
 
 [Open the public PhiOS Mobile page](https://michaelwave369.github.io/PhiOS-Mobile/). It remains the **Rung 1.1 browser/PWA experience**, with native Android Rung 2.4 progress now visible on Home, About and the desktop footer.

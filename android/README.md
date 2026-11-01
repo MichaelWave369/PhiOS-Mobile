@@ -2,6 +2,14 @@
 
 **Scope:** An ordinary, user-selectable Android HOME app for test devices and emulator. This project does not replace, unlock, root, flash, modify, or bypass Android firmware.
 
+## Rung 2.5: Narrow-screen, accessibility and rollback readiness
+
+The native Home adds **focusable Pin/Unpin buttons** to every discovered app row, so pinning no longer requires a long press or precision gesture. It retains the existing long-press shortcut for convenience. The Home footer adds **Home help**, with explicit stock-launcher restoration steps and a link to Android's Home settings screen. Nothing chooses or restores the default Home silently.
+
+On narrow screens (below 390 dp) or enlarged system font scale (at least 1.3x), Home actions form two full-width rows, the PhiSurf entry moves out from beside the title, the visual dial shrinks while preserving its six button alternatives, app rows increase their minimum height, and the full Home scrolls to keep recovery and app controls reachable. This does not grant additional Android permissions or alter the native JSON backup contract.
+
+Emulator CI checks the labeled Pin/Unpin controls, Home recovery dialog, and a narrow/large-font scenario, then restores the emulator's display and font settings. Physical-device TalkBack, keyboard focus order, rotation, vendor-specific Home restoration and hardware behavior still need manual qualification. See the [spare-device acceptance protocol](../docs/ANDROID_SPARE_DEVICE_QUALIFICATION.md).
+
 ## Rung 2.1c: Reliable emulator startup verification
 
 The API 35 emulator smoke test now distinguishes first-boot focus delays from genuine PhiOS launcher failures. It wakes the disposable emulator, retries only when PhiOS remains running but is not the resumed foreground Activity, and records Android activity/window diagnostics, screenshots, launcher startup attempts and an APK-identified JSON receipt. A crash, terminated process or resumed launcher without its UI **fails immediately**. It does not hide runtime failures or change physical device behavior.

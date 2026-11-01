@@ -653,6 +653,116 @@ def await_role(expected, label):
                          + ", observed " + repr(current_home_holders()))
 
 
+
+READINESS_EVIDENCE = {
+    "recoveryGuide": False,
+    "pinButtonAccessible": False,
+    "narrowLargeText": False,
+    "displayRestored": False,
+    "fontScaleRestored": False,
+    "physicalDeviceTested": False,
+}
+
+
+def scroll_for_ui(label, stage, count=7):
+    """Find a real accessibility node while moving through the Home page."""
+    for index in range(count):
+        nodes = xml_snapshot(stage + "-" + str(index))
+        target = locate(nodes, label)
+        if target is not None:
+            return nodes
+        # Scroll the virtual display only. No device-level system control.
+        adb("shell", "input", "swipe", "400", "1440", "400", "430", "420")
+        time.sleep(1)
+    raise AssertionError("Native Home element unreachable after scrolling: " + label)
+
+
+def accessibility_and_home_recovery():
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("Home help", "readiness-home-help")
+    tap(nodes, "Home help")
+    nodes = visible("Restore your original Home", "readiness-recovery-dialog")
+    demand(locate(nodes, "Open Home settings") is not None,
+           "Stock Home recovery guide has no Android settings action")
+    demand(locate(nodes, "Select the stock Home app") is not None,
+           "Stock Home recovery steps missing")
+    screenshot("09a-home-recovery-guide")
+    tap(nodes, "Close")
+    READINESS_EVIDENCE["recoveryGuide"] = True
+
+    # Filter to the deterministic test fixture so the pin button is visible,
+    # and prove pinning does not require an inaccessible long press.
+    nodes = visible("Search launchable apps", "readiness-search")
+    tap(nodes, "Search launchable apps")
+    adb("shell", "input", "text", "CI%sTarget")
+    # The IME can cover the visible app row. A coordinate tap while the
+    # keyboard is up presses a letter instead of the Pin/Unpin action.
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    nodes = visible("Unpin PhiOS CI Target", "readiness-pin-before")
+    search_fields = [node for node in nodes
+                     if node.attrib.get("class") == "android.widget.EditText"]
+    demand(len(search_fields) == 1
+           and search_fields[0].attrib.get("text", "").casefold() == "ci target",
+           "Keyboard dismissal changed the filtered app search")
+    screenshot("09b-accessible-unpin-keyboard-hidden")
+    target = locate(nodes, "Unpin PhiOS CI Target")
+    demand(target.attrib.get("clickable") == "true",
+           "Accessible Unpin action is not clickable")
+    screenshot("09b-accessible-unpin")
+    tap(nodes, "Unpin PhiOS CI Target")
+    nodes = visible("Pin PhiOS CI Target", "readiness-pin-after")
+    target = locate(nodes, "Pin PhiOS CI Target")
+    demand(target.attrib.get("clickable") == "true",
+           "Accessible Pin action is not clickable")
+    tap(nodes, "Pin PhiOS CI Target")
+    visible("Unpin PhiOS CI Target", "readiness-pin-restored")
+    READINESS_EVIDENCE["pinButtonAccessible"] = True
+
+
+def narrow_large_text_readiness():
+    # This is Android's disposable CI emulator, not an attached user phone.
+    old_scale = adb("shell", "settings", "get", "system", "font_scale").strip()
+    try:
+        adb("shell", "wm", "size", "840x1800")
+        adb("shell", "settings", "put", "system", "font_scale", "1.4")
+        adb("shell", "am", "force-stop", PKG)
+        adb("shell", "am", "start", "-W", "-n", COMPONENT)
+        nodes = visible("PHIOS MOBILE", "readiness-narrow-start", tries=7)
+        demand(locate(nodes, "SURF") is not None,
+               "Narrow display hides PhiSurf")
+        for label in ("All apps", "Pinned", "Layout", "System"):
+            nodes = scroll_for_ui(label, "readiness-control-" + label.replace(" ", "-"))
+            demand(locate(nodes, label) is not None,
+                   "Narrow display hides action " + label)
+        nodes = scroll_for_ui("Home help", "readiness-recovery-visible")
+        home_button = locate(nodes, "Home help")
+        demand(home_button.attrib.get("clickable") == "true",
+               "Narrow display recovery button is not clickable")
+        nodes = scroll_for_ui("Backup", "readiness-backup-visible")
+        demand(locate(nodes, "Backup").attrib.get("clickable") == "true",
+               "Narrow display backup button is not clickable")
+        nodes = scroll_for_ui("Unpin PhiOS CI Target", "readiness-pin-visible")
+        demand(locate(nodes, "Unpin PhiOS CI Target").attrib.get("clickable") == "true",
+               "Narrow display accessible pin control is not clickable")
+        screenshot("09c-narrow-android-large-text")
+        READINESS_EVIDENCE["narrowLargeText"] = True
+    finally:
+        adb("shell", "wm", "size", "reset", check=False)
+        if old_scale and old_scale != "null":
+            adb("shell", "settings", "put", "system", "font_scale", old_scale, check=False)
+        else:
+            adb("shell", "settings", "delete", "system", "font_scale", check=False)
+        READINESS_EVIDENCE["displayRestored"] = "Override size" not in adb(
+            "shell", "wm", "size", check=False)
+        now_scale = adb("shell", "settings", "get", "system", "font_scale", check=False).strip()
+        READINESS_EVIDENCE["fontScaleRestored"] = now_scale == old_scale
+        adb("shell", "am", "force-stop", PKG, check=False)
+        adb("shell", "am", "start", "-W", "-n", COMPONENT, check=False)
+    demand(READINESS_EVIDENCE["displayRestored"] and READINESS_EVIDENCE["fontScaleRestored"],
+           "Emulator display or font scale was not restored after readiness test")
+
+
 def home_role_roundtrip():
     role = "android.app.role.HOME"
     initial = current_home_holders()
@@ -731,6 +841,7 @@ def evidence():
         "scope": "Disposable Android emulator; no physical device qualification",
         "launcherStartup": STARTUP_EVIDENCE,
         "documentRoundtrip": DOCUMENT_EVIDENCE,
+        "deviceReadiness": READINESS_EVIDENCE,
         "apiLevel": adb("shell", "getprop", "ro.build.version.sdk", check=False).strip(),
         "model": adb("shell", "getprop", "ro.product.model", check=False).strip(),
         "fingerprint": adb("shell", "getprop", "ro.build.fingerprint", check=False).strip(),
@@ -766,7 +877,9 @@ def main():
             ("Home layout survives restart and reset", layout_preferences),
             ("Local profile backup and restore controls", local_backup_controls),
             ("Real DocumentsUI export, cancelled import, confirmed restore and persistence", document_provider_roundtrip),
+            ("Accessible pin actions and stock Home recovery guide", accessibility_and_home_recovery),
             ("Temporarily select PhiOS HOME and restore stock HOME", home_role_roundtrip),
+            ("Narrow display and enlarged Android font readiness", narrow_large_text_readiness),
         ]:
             step(name, fn)
     except Exception:

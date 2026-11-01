@@ -96,3 +96,13 @@ Check the exact pull-request HEAD SHA for the pre-merge gate and the main merge 
 - [ ] Verify no signing secrets are stored or used; debug signing is not a public release
 - [ ] Confirm safe stock Home restore and uninstall on a disposable/spare device
 - [ ] Establish a separate protected signed release plan before external distribution
+
+## Rung 2.5: Accessibility, compact display and controlled recovery
+- [ ] Verify native app rows expose separate focusable **Pin** / **Unpin** controls in the accessibility tree
+- [ ] Verify Home help dialog describes stock Home recovery and opens Android Home settings on explicit action
+- [ ] Verify small widths and large fonts keep All apps, Pinned, Layout, System, Home help, Backup and app rows reachable
+- [ ] Verify emulator display size and font scale return to baseline even after an assertion failure
+- [ ] Review emulator XML/screenshots for clipped text, labels and interaction order
+- [ ] Test a **physical spare** Android device manually with TalkBack and optional external keyboard
+- [ ] Record consent, exact model/OS, APK SHA-256, source commit, CI run, original stock Home, faults and restore result
+- [ ] Do not claim physical readiness until [spare-device acceptance protocol](ANDROID_SPARE_DEVICE_QUALIFICATION.md) is completed

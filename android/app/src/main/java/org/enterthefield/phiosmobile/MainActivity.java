@@ -120,6 +120,7 @@ public final class MainActivity extends Activity {
         b.setBackground(surface(PANEL, 14, Color.rgb(50, 79, 100)));
         b.setPadding(dp(12), 0, dp(12), 0);
         b.setMinHeight(dp(48));
+        b.setMinWidth(dp(48));
         b.setOnClickListener(view -> action.run());
         return b;
     }
@@ -139,6 +140,9 @@ public final class MainActivity extends Activity {
             root.setFitsSystemWindows(false);
         }
 
+        boolean tight = LauncherLayoutPolicy.stackActions(
+                getResources().getConfiguration().screenWidthDp,
+                getResources().getConfiguration().fontScale);
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
         TextView phi = text("Φ", 44, CYAN, false);
@@ -147,10 +151,17 @@ public final class MainActivity extends Activity {
         identity.setPadding(dp(10), 0, 0, 0);
         identity.setOrientation(LinearLayout.VERTICAL);
         identity.addView(text("PHIOS MOBILE", 19, TEXT, true));
-        identity.addView(text("NATIVE LAUNCHER · RUNG 2.2", 10, MUTED, true));
+        identity.addView(text("NATIVE LAUNCHER · RUNG 2.5", 10, MUTED, true));
         header.addView(identity, new LinearLayout.LayoutParams(0, -2, 1));
-        header.addView(button("✳ SURF", this::openSurf));
+        Button surfAction = button("✳ SURF", this::openSurf);
+        if (!tight) header.addView(surfAction);
         root.addView(header);
+        if (tight) {
+            // At narrow widths, keep the main navigation button below the title.
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, dp(48));
+            p.topMargin = dp(6);
+            root.addView(surfAction, p);
+        }
 
         TextClock clock = new TextClock(this);
         clock.setFormat12Hour("h:mm a");
@@ -211,8 +222,9 @@ public final class MainActivity extends Activity {
         root.addView(pinnedShelf, shelfParams);
 
         LinearLayout actions = new LinearLayout(this);
-        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(-1, dp(49));
-        actionParams.topMargin = dp(16);
+        actions.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(-1, -2);
+        actionParams.topMargin = dp(12);
         root.addView(actions, actionParams);
         Button all = button("All apps", () -> {
             favoritesOnly = false;
@@ -224,10 +236,17 @@ public final class MainActivity extends Activity {
         });
         Button layout = button("Layout", this::openLayout);
         Button sysSettings = button("System ⚙", this::openSettings);
-        for (Button action : new Button[]{all, favorites, layout, sysSettings}) {
-            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -1, 1);
-            p.setMargins(dp(2), 0, dp(2), 0);
-            actions.addView(action, p);
+        Button[] controls = {all, favorites, layout, sysSettings};
+        int columns = tight ? 2 : 4;
+        for (int offset = 0; offset < controls.length; offset += columns) {
+            LinearLayout line = new LinearLayout(this);
+            line.setGravity(Gravity.CENTER_VERTICAL);
+            for (int i = offset; i < Math.min(offset + columns, controls.length); i++) {
+                LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(48), 1);
+                p.setMargins(dp(2), dp(2), dp(2), dp(2));
+                line.addView(controls[i], p);
+            }
+            actions.addView(line, new LinearLayout.LayoutParams(-1, -2));
         }
 
         search = new EditText(this);
@@ -260,8 +279,14 @@ public final class MainActivity extends Activity {
         scroller.setVerticalScrollBarEnabled(false);
         appList = new LinearLayout(this);
         appList.setOrientation(LinearLayout.VERTICAL);
-        scroller.addView(appList);
-        root.addView(scroller, new LinearLayout.LayoutParams(-1, 0, 1));
+        if (tight) {
+            // A whole-page scroll avoids losing lower actions and app rows when
+            // system text is enlarged or the display is narrow/short.
+            root.addView(appList, new LinearLayout.LayoutParams(-1, -2));
+        } else {
+            scroller.addView(appList);
+            root.addView(scroller, new LinearLayout.LayoutParams(-1, 0, 1));
+        }
 
         emptyView = text("Finding launcher activities…", 13, MUTED, false);
         emptyView.setPadding(dp(12), dp(16), dp(12), dp(16));
@@ -269,13 +294,24 @@ public final class MainActivity extends Activity {
 
         LinearLayout footer = new LinearLayout(this);
         footer.setGravity(Gravity.CENTER_VERTICAL);
-        TextView footnote = text("Hold an app to pin it. Default Home: Settings → Apps → Default apps.", 10, MUTED, false);
-        footnote.setPadding(0, dp(8), dp(6), 0);
-        footer.addView(footnote, new LinearLayout.LayoutParams(0, -2, 1));
-        footer.addView(button("Backup", this::openBackupMenu),
-                new LinearLayout.LayoutParams(dp(90), dp(48)));
-        root.addView(footer);
-        setContentView(root);
+        Button homeHelp = button("Home help", this::openHomeRecoveryGuide);
+        homeHelp.setContentDescription("Home help: restore your original Android launcher");
+        Button backup = button("Backup", this::openBackupMenu);
+        LinearLayout.LayoutParams left = new LinearLayout.LayoutParams(0, dp(48), 1);
+        left.rightMargin = dp(8);
+        footer.addView(homeHelp, left);
+        footer.addView(backup, new LinearLayout.LayoutParams(0, dp(48), 1));
+        if (tight) {
+            // Recovery must be reachable before a long installed-app list.
+            root.addView(footer, root.indexOfChild(appList));
+            ScrollView fullPage = new ScrollView(this);
+            fullPage.setFillViewport(true);
+            fullPage.addView(root, new ScrollView.LayoutParams(-1, -2));
+            setContentView(fullPage);
+        } else {
+            root.addView(footer);
+            setContentView(root);
+        }
         applyHomeLayout();
     }
 
@@ -340,7 +376,9 @@ public final class MainActivity extends Activity {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(dp(12), dp(6), dp(12), dp(6));
         row.setBackground(surface(PANEL, 13, Color.rgb(39, 63, 82)));
-        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, dp(compactRows ? 52 : 62));
+        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1,
+                dp(LauncherLayoutPolicy.appRowHeightDp(compactRows,
+                        getResources().getConfiguration().fontScale)));
         rowParams.bottomMargin = dp(8);
 
         ImageView icon = new ImageView(this);
@@ -358,19 +396,33 @@ public final class MainActivity extends Activity {
         titles.addView(text(pinned.contains(componentKey) ? "★ Pinned" : "Tap to open · Hold to pin", 10, pinned.contains(componentKey) ? CYAN : MUTED, false));
         row.addView(titles, new LinearLayout.LayoutParams(0, -2, 1));
 
-        row.setContentDescription(String.valueOf(info.getLabel()) + (pinned.contains(componentKey) ? ", pinned" : ""));
+        // Expose a real focusable alternative to long-press pinning for TalkBack.
+        boolean isPinned = pinned.contains(componentKey);
+        Button pinAction = button(isPinned ? "Unpin" : "Pin", () -> togglePin(info));
+        pinAction.setContentDescription((isPinned ? "Unpin " : "Pin ") + info.getLabel());
+        row.addView(pinAction, new LinearLayout.LayoutParams(dp(67), dp(48)));
+
+        row.setContentDescription("Open " + info.getLabel()
+                + (isPinned ? ", pinned" : ", not pinned"));
         row.setClickable(true);
         row.setFocusable(true);
         row.setOnClickListener(view -> launchApp(info));
         row.setOnLongClickListener(view -> {
-            if (pinned.contains(componentKey)) pinned.remove(componentKey);
-            else pinned.add(componentKey);
-            preferences.edit().putStringSet(PINNED, new HashSet<>(pinned)).apply();
-            renderApps();
-            Toast.makeText(this, pinned.contains(componentKey) ? "Pinned" : "Unpinned", Toast.LENGTH_SHORT).show();
+            togglePin(info);
             return true;
         });
         appList.addView(row, rowParams);
+    }
+
+    private void togglePin(LauncherActivityInfo info) {
+        String key = info.getComponentName().flattenToString();
+        boolean nowPinned = !pinned.contains(key);
+        if (nowPinned) pinned.add(key);
+        else pinned.remove(key);
+        preferences.edit().putStringSet(PINNED, new HashSet<>(pinned)).apply();
+        renderApps();
+        Toast.makeText(this, (nowPinned ? "Pinned " : "Unpinned ") + info.getLabel(),
+                Toast.LENGTH_SHORT).show();
     }
 
     private void launchApp(LauncherActivityInfo info) {
@@ -674,6 +726,25 @@ public final class MainActivity extends Activity {
         Toast.makeText(this, message + ": " + detail, Toast.LENGTH_LONG).show();
     }
 
+    private void openHomeRecoveryGuide() {
+        new AlertDialog.Builder(this)
+                .setTitle("Restore your original Home")
+                .setMessage("PhiOS is only a user-selectable Android launcher. It cannot "
+                        + "silently change the system Home app.\n\n"
+                        + "To return to your original launcher:\n"
+                        + "1. Open Android Settings → Apps → Default apps → Home app.\n"
+                        + "2. Select the stock Home app that was installed before PhiOS.\n"
+                        + "3. Press Home and confirm your original launcher opens.\n"
+                        + "4. Only then uninstall PhiOS Mobile if you want to.\n\n"
+                        + "If your device uses different menus, follow its manufacturer "
+                        + "instructions. Save a local JSON backup of your pins and layout "
+                        + "before uninstalling: uninstalling removes those app preferences. "
+                        + "No firmware flashing, rooting or reset is required.")
+                .setPositiveButton("Open Home settings", (dialog, which) -> chooseDefaultHome())
+                .setNegativeButton("Close", null)
+                .show();
+    }
+
     private void openSettings() {
         try {
             startActivity(new Intent(Settings.ACTION_SETTINGS));
@@ -730,7 +801,10 @@ public final class MainActivity extends Activity {
             holder[0].dismiss();
             actions[index].run();
         });
-        container.addView(dial, new LinearLayout.LayoutParams(-1, dp(292)));
+        container.addView(dial, new LinearLayout.LayoutParams(-1,
+                dp(LauncherLayoutPolicy.surfDialHeightDp(
+                        getResources().getConfiguration().screenHeightDp,
+                        getResources().getConfiguration().fontScale))));
 
         TextView hint = text("Drag from the center and release, or use a button below.", 11, MUTED, false);
         hint.setGravity(Gravity.CENTER);

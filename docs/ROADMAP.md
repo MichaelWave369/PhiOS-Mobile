@@ -82,6 +82,19 @@ All statuses below describe narrow engineering evidence. CI compile success does
 - [ ] Manual spare-phone install, update, original Home restore and uninstall
 - [ ] Separate secure *release signing* and reproducible build strategy; debug APK is not a production release
 
+## Rung 2.5: Real-device readiness (this PR)
+- [x] Add separate focusable Pin/Unpin actions for each native launcher app row
+- [x] Add in-app Home recovery guide linking to Android's user-controlled Home settings
+- [x] Reflow action controls and PhiSurf for narrow displays or large Android text
+- [x] Scroll entire Home in tight mode so app list, Backup, and recovery aren't clipped
+- [x] Add pure Android display-policy unit tests
+- [x] Add emulator UI gates for labeled pin actions, recovery guide and narrow/large-font scenario
+- [x] Publish a phase-gated spare-device protocol with SHA-256, stock Home return and device-test record
+- [ ] Confirm PR native build/JVM tests and full emulator run green
+- [ ] Confirm post-merge emulator green on main
+- [ ] Run *manual* TalkBack/keyboard/rotation/accessibility audit
+- [ ] Test on one consented, named physical spare device with verified stock Home recovery
+
 ## Rung 2.1: Native UX and explicit optional capabilities
 - Enhance native home layout, widgets, shortcuts and bounded quick controls
 - Consider notification access only with independent opt-in and revoke instructions
