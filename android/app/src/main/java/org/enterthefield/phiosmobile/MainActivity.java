@@ -279,8 +279,14 @@ public final class MainActivity extends Activity {
         scroller.setVerticalScrollBarEnabled(false);
         appList = new LinearLayout(this);
         appList.setOrientation(LinearLayout.VERTICAL);
-        scroller.addView(appList);
-        root.addView(scroller, new LinearLayout.LayoutParams(-1, 0, 1));
+        if (tight) {
+            // A whole-page scroll avoids losing lower actions and app rows when
+            // system text is enlarged or the display is narrow/short.
+            root.addView(appList, new LinearLayout.LayoutParams(-1, -2));
+        } else {
+            scroller.addView(appList);
+            root.addView(scroller, new LinearLayout.LayoutParams(-1, 0, 1));
+        }
 
         emptyView = text("Finding launcher activities…", 13, MUTED, false);
         emptyView.setPadding(dp(12), dp(16), dp(12), dp(16));
@@ -295,8 +301,17 @@ public final class MainActivity extends Activity {
         left.rightMargin = dp(8);
         footer.addView(homeHelp, left);
         footer.addView(backup, new LinearLayout.LayoutParams(0, dp(48), 1));
-        root.addView(footer);
-        setContentView(root);
+        if (tight) {
+            // Recovery must be reachable before a long installed-app list.
+            root.addView(footer, root.indexOfChild(appList));
+            ScrollView fullPage = new ScrollView(this);
+            fullPage.setFillViewport(true);
+            fullPage.addView(root, new ScrollView.LayoutParams(-1, -2));
+            setContentView(fullPage);
+        } else {
+            root.addView(footer);
+            setContentView(root);
+        }
         applyHomeLayout();
     }
 
