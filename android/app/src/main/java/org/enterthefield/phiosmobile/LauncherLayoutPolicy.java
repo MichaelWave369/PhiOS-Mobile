@@ -12,8 +12,10 @@ public final class LauncherLayoutPolicy {
     /** Give longer labels room at larger Android font scales. */
     public static int appRowHeightDp(boolean compact, float fontScale) {
         float scale = Math.max(1f, fontScale);
-        int minimum = compact ? 56 : 64;
-        return Math.max(minimum, (int) Math.ceil(44 + 20 * scale));
+        int baseline = compact ? 56 : 64;
+        // Preserve the compact preference at normal scale and add vertical
+        // room for the separate label/status lines when Android enlarges text.
+        return baseline + (int) Math.ceil(28f * (scale - 1f));
     }
 
     /** Six accessible buttons remain available when the graphic dial is reduced. */
