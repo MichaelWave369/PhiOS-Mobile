@@ -696,7 +696,16 @@ def accessibility_and_home_recovery():
     nodes = visible("Search launchable apps", "readiness-search")
     tap(nodes, "Search launchable apps")
     adb("shell", "input", "text", "CI%sTarget")
+    # The IME can cover the visible app row. A coordinate tap while the
+    # keyboard is up presses a letter instead of the Pin/Unpin action.
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
     nodes = visible("Unpin PhiOS CI Target", "readiness-pin-before")
+    search_fields = [node for node in nodes
+                     if node.attrib.get("class") == "android.widget.EditText"]
+    demand(len(search_fields) == 1
+           and search_fields[0].attrib.get("text", "").casefold() == "ci target",
+           "Keyboard dismissal changed the filtered app search")
+    screenshot("09b-accessible-unpin-keyboard-hidden")
     target = locate(nodes, "Unpin PhiOS CI Target")
     demand(target.attrib.get("clickable") == "true",
            "Accessible Unpin action is not clickable")
