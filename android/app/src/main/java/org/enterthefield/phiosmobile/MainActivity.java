@@ -120,6 +120,7 @@ public final class MainActivity extends Activity {
         b.setBackground(surface(PANEL, 14, Color.rgb(50, 79, 100)));
         b.setPadding(dp(12), 0, dp(12), 0);
         b.setMinHeight(dp(48));
+        b.setMinWidth(dp(48));
         b.setOnClickListener(view -> action.run());
         return b;
     }
@@ -139,6 +140,9 @@ public final class MainActivity extends Activity {
             root.setFitsSystemWindows(false);
         }
 
+        boolean tight = LauncherLayoutPolicy.stackActions(
+                getResources().getConfiguration().screenWidthDp,
+                getResources().getConfiguration().fontScale);
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
         TextView phi = text("Φ", 44, CYAN, false);
@@ -147,10 +151,17 @@ public final class MainActivity extends Activity {
         identity.setPadding(dp(10), 0, 0, 0);
         identity.setOrientation(LinearLayout.VERTICAL);
         identity.addView(text("PHIOS MOBILE", 19, TEXT, true));
-        identity.addView(text("NATIVE LAUNCHER · RUNG 2.2", 10, MUTED, true));
+        identity.addView(text("NATIVE LAUNCHER · RUNG 2.5", 10, MUTED, true));
         header.addView(identity, new LinearLayout.LayoutParams(0, -2, 1));
-        header.addView(button("✳ SURF", this::openSurf));
+        Button surfAction = button("✳ SURF", this::openSurf);
+        if (!tight) header.addView(surfAction);
         root.addView(header);
+        if (tight) {
+            // At narrow widths, keep the main navigation button below the title.
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, dp(48));
+            p.topMargin = dp(6);
+            root.addView(surfAction, p);
+        }
 
         TextClock clock = new TextClock(this);
         clock.setFormat12Hour("h:mm a");
@@ -211,8 +222,9 @@ public final class MainActivity extends Activity {
         root.addView(pinnedShelf, shelfParams);
 
         LinearLayout actions = new LinearLayout(this);
-        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(-1, dp(49));
-        actionParams.topMargin = dp(16);
+        actions.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(-1, -2);
+        actionParams.topMargin = dp(12);
         root.addView(actions, actionParams);
         Button all = button("All apps", () -> {
             favoritesOnly = false;
@@ -224,10 +236,17 @@ public final class MainActivity extends Activity {
         });
         Button layout = button("Layout", this::openLayout);
         Button sysSettings = button("System ⚙", this::openSettings);
-        for (Button action : new Button[]{all, favorites, layout, sysSettings}) {
-            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -1, 1);
-            p.setMargins(dp(2), 0, dp(2), 0);
-            actions.addView(action, p);
+        Button[] controls = {all, favorites, layout, sysSettings};
+        int columns = tight ? 2 : 4;
+        for (int offset = 0; offset < controls.length; offset += columns) {
+            LinearLayout line = new LinearLayout(this);
+            line.setGravity(Gravity.CENTER_VERTICAL);
+            for (int i = offset; i < Math.min(offset + columns, controls.length); i++) {
+                LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(48), 1);
+                p.setMargins(dp(2), dp(2), dp(2), dp(2));
+                line.addView(controls[i], p);
+            }
+            actions.addView(line, new LinearLayout.LayoutParams(-1, -2));
         }
 
         search = new EditText(this);
@@ -730,7 +749,10 @@ public final class MainActivity extends Activity {
             holder[0].dismiss();
             actions[index].run();
         });
-        container.addView(dial, new LinearLayout.LayoutParams(-1, dp(292)));
+        container.addView(dial, new LinearLayout.LayoutParams(-1,
+                dp(LauncherLayoutPolicy.surfDialHeightDp(
+                        getResources().getConfiguration().screenHeightDp,
+                        getResources().getConfiguration().fontScale))));
 
         TextView hint = text("Drag from the center and release, or use a button below.", 11, MUTED, false);
         hint.setGravity(Gravity.CENTER);
