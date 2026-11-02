@@ -3,6 +3,7 @@ import {
   serializeBackup, parseBackup
 } from "./core.mjs";
 import { initLivingShell } from "./living.mjs";
+import {initFieldReceiver} from "./field-receiver.mjs";
 import { createPortablePassportStore, parsePortablePassport } from "./operator-passport.mjs";
 
 const byId = (id) => document.getElementById(id);
@@ -309,6 +310,7 @@ async function registerOfflineShell() {
 
 paintPreferences();
 paintOperator();
+initFieldReceiver({showToast});
 updateNote();
 updateClock();
 updatePulse();
