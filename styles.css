@@ -123,3 +123,14 @@ html.reduce-motion.operator-halo .hero-card {animation:none}
   text-decoration:none;padding:10px 11px;font-size:10px;font-weight:800;line-height:1.5}
 .track-link:hover,.track-link:focus-visible{background:rgba(var(--accent-rgb),.12)}
 @media(max-width:380px){.native-track-head>.micro-label{width:100%}.track-link{flex:1 1 100%}}
+
+/* Rung 5: independent Field Companion preferences, not Android/PhiOperator permissions */
+.field-receiver-mobile{margin:20px 0;padding:17px;border:1px solid #439ca5;border-radius:15px;background:#10243a}
+.field-receiver-mobile h2{margin:7px 0 12px;color:#e6f9ff}
+.field-receiver-mobile .subhead{font-size:.79rem;line-height:1.65}
+.field-receiver-mobile input[type=file]{width:100%;max-width:100%;color:#dff7fc;font-size:.78rem;margin:10px 0}
+.field-receiver-mobile .field-receiver-actions{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
+.field-receiver-mobile button:disabled{opacity:.48}
+.field-receiver-mobile #field-receiver-routes{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
+.field-receiver-mobile #field-receiver-routes a{font-size:.78rem;color:#8cecf0}
+.field-receiver-mobile .micro-copy{font-size:.71rem;line-height:1.65}
