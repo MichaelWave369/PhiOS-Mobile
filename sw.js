@@ -1,8 +1,9 @@
 /* PhiOS Mobile Rung 1: cache only the public, static shell. No network interception beyond this origin and scope. */
-const CACHE = "phios-mobile-dual-track-r24-v1";
+const CACHE = "phios-mobile-field-receiver-r5-v1";
 const SHELL = [
   "./", "./index.html", "./styles.css", "./manifest.webmanifest",
-  "./assets/icon.svg", "./src/core.mjs", "./src/main.js", "./src/living.mjs", "./src/operator-passport.mjs"
+  "./assets/icon.svg", "./src/core.mjs", "./src/main.js", "./src/living.mjs", "./src/operator-passport.mjs",
+  "./src/field-companion.mjs", "./src/field-receiver.mjs"
 ];
 
 self.addEventListener("install", (event) => {
