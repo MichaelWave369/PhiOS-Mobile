@@ -102,6 +102,15 @@
             <div><span>Local storage writes</span><strong id="pulse-storage">Checking</strong></div>
           </div>
           <button type="button" class="ghost-button" id="refresh-pulse">Refresh observations</button>
+          <section class="info-panel" aria-labelledby="gpu-browser-heading">
+            <span class="micro-label">Φ GPU OBSERVATORY / RUNG 1</span>
+            <h2 id="gpu-browser-heading">Browser GPU capability</h2>
+            <p>Explicitly inspect WebGPU adapter availability. No automatic scan, benchmark, privileged Android access, clock change or unlock.</p>
+            <button type="button" class="ghost-button" id="inspect-gpu">Inspect WebGPU adapter</button>
+            <p id="gpu-status" role="status" aria-live="polite">Not inspected.</p>
+            <p id="gpu-detail" class="micro-copy"></p>
+            <p class="micro-copy">This browser cannot report true VRAM, CUDA/Tensor performance or system GPU utilization.</p>
+          </section>
           <p class="foot-note">Network status is a browser hint, not proof of internet access. This app cannot observe cellular radios, calls, boot state, or Android permissions.</p>
         </section>
 
