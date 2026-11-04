@@ -3,6 +3,7 @@ import {
   serializeBackup, parseBackup
 } from "./core.mjs";
 import { initLivingShell } from "./living.mjs";
+import { inspectBrowserGpu } from "./browser-gpu.mjs";
 import {initFieldReceiver} from "./field-receiver.mjs";
 import { createPortablePassportStore, parsePortablePassport } from "./operator-passport.mjs";
 
@@ -295,6 +296,26 @@ byId("operator-remove").addEventListener("click", () => {
   showToast("Imported Operator Passport removed.");
 });
 byId("refresh-pulse").addEventListener("click", updatePulse);
+byId("inspect-gpu").addEventListener("click", async () => {
+  const button = byId("inspect-gpu");
+  const status = byId("gpu-status");
+  const detail = byId("gpu-detail");
+  button.disabled = true;
+  status.textContent = "Requesting browser adapter…";
+  detail.textContent = "";
+  try {
+    const result = await inspectBrowserGpu({gpu: navigator.gpu, secureContext: window.isSecureContext});
+    status.textContent = result.status === "observed" ? "WebGPU adapter available (not benchmarked)" : "Unavailable: " + result.reason;
+    if (result.status === "observed") {
+      const device = result.devices[0];
+      detail.textContent = "Browser-reported vendor: " + (device.reported_vendor || "not exposed")
+        + " · architecture: " + (device.reported_architecture || "not exposed")
+        + " · feature count: " + (device.reported_feature_count ?? "not exposed");
+    }
+  } finally {
+    button.disabled = false;
+  }
+});
 window.addEventListener("online", updatePulse);
 window.addEventListener("offline", updatePulse);
 

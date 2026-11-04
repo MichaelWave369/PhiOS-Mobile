@@ -236,7 +236,11 @@ public final class MainActivity extends Activity {
         });
         Button layout = button("Layout", this::openLayout);
         Button sysSettings = button("System ⚙", this::openSettings);
-        Button[] controls = {all, favorites, layout, sysSettings};
+        Button gpu = button("GPU info", () -> new AlertDialog.Builder(this)
+                .setTitle("Φ GPU Observatory")
+                .setMessage(GpuCapabilitySummary.describe(this))
+                .setPositiveButton("Close", null).show());
+        Button[] controls = {all, favorites, layout, sysSettings, gpu};
         int columns = tight ? 2 : 4;
         for (int offset = 0; offset < controls.length; offset += columns) {
             LinearLayout line = new LinearLayout(this);

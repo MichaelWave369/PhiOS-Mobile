@@ -27,9 +27,10 @@ test("home reordering targets all six shortcuts, no duplicates", async () => {
 test("offline cache has the new interaction module", async () => {
   const sw = await readFile(new URL("sw.js", root), "utf8");
   const built = await readFile(new URL("src/main.js", root), "utf8");
-  assert.match(sw, /phios-mobile-field-receiver-r5-v1/);
+  assert.match(sw, /phios-mobile-gpu-observatory-v1/);
   assert.match(sw, /src\/living\.mjs/);
   assert.match(sw, /src\/operator-passport\.mjs/);
+  assert.match(sw, /src\/browser-gpu\.mjs/);
   assert.match(built, /import \{ initLivingShell \} from "\.\/living\.mjs"/);
 });
 
