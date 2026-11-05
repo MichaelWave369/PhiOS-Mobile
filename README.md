@@ -4,6 +4,12 @@
 
 PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1.1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
 
+## Universal Shell R1: one public source catalog across devices
+
+The mobile **browser/PWA Home** now includes an expandable, searchable catalog containing the same pinned **225 public GitHub repositories** as the PhiOS Web browser desktop and PhiOS native contract (`phios.public-repo-catalog.v1`, FieldConstellation 2026-11-04 snapshot blob `e295f6265e60032de98a2acd8e53295505fc47e8`). The list is offline-packaged and explicitly marked **SOURCE ONLY**. Its links lead to public source pages. It is **not** an app installer or a verified index of compatible executables; newly created repositories await a reviewed snapshot refresh.
+
+The existing separate native Android HOME test APK still only discovers and launches **already installed** current-user apps. It does not import the web catalog, sideload arbitrary APKs, alter the default Home, change Android firmware, or acquire additional permissions. A future platform-specific install workflow will require verified app manifests, compatibility and license review, exact artifacts, user consent and rollback evidence. Refer to [PhiOS Universal Shell R1 contract](https://github.com/MichaelWave369/PhiOS/blob/main/docs/PHIOS_UNIVERSAL_SHELL_R1.md) once merged.
+
 ## Rung 2.5: Native real-device readiness (PR under review)
 
 Native launcher usability now includes an explicit focusable **Pin / Unpin** control alongside long-press, an always-labeled **Home help** button showing reversible stock-launcher instructions, and adaptive layout for narrow displays or large system fonts. On tight displays, Home becomes scrollable so controls and the app list cannot silently fall off the screen. The emulator qualification adds UI observations at a narrow resolution and enlarged text scale, plus checks that display settings are restored.
