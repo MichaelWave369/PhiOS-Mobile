@@ -5,7 +5,7 @@ const output = new URL("../dist/", import.meta.url);
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 
-for (const name of ["index.html", "styles.css", "sw.js", "manifest.webmanifest"]) {
+for (const name of ["index.html", "styles.css", "sw.js", "manifest.webmanifest", "public-repo-catalog.v1.json"]) {
   await copyFile(new URL(name, source), new URL(name, output));
 }
 for (const directory of ["assets", "src"]) {
