@@ -1,10 +1,10 @@
 /* PhiOS Mobile Rung 1: cache only the public, static shell. No network interception beyond this origin and scope. */
-const CACHE = "phios-mobile-universal-catalog-r1-v2";
+const CACHE = "phios-mobile-universal-shelf-r2-v3";
 const SHELL = [
   "./", "./index.html", "./styles.css", "./manifest.webmanifest",
   "./assets/icon.svg", "./src/core.mjs", "./src/main.js", "./src/living.mjs", "./src/operator-passport.mjs",
   "./src/field-companion.mjs", "./src/field-receiver.mjs", "./src/browser-gpu.mjs",
-  "./src/catalog.mjs", "./src/catalog-data.mjs", "./public-repo-catalog.v1.json"
+  "./src/catalog.mjs", "./src/catalog-data.mjs", "./src/shelf-portable.js", "./src/shelf-ui.mjs", "./public-repo-catalog.v1.json"
 ];
 
 self.addEventListener("install", (event) => {
