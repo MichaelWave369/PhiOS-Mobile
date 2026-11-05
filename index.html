@@ -62,6 +62,20 @@
             <button type="button" class="app-tile" data-shortcut="about" data-open="about"><span class="app-icon">Φ</span><span>About</span><small>Scope</small></button>
             <button type="button" class="app-tile" data-shortcut="phisurf" id="grid-surf"><span class="app-icon">✳</span><span>PhiSurf</span><small>Navigate</small></button>
           </div>
+          <section class="public-catalog" aria-labelledby="public-catalog-title">
+            <p class="eyebrow">UNIVERSAL PHIOS SHELL · PUBLIC SOURCE INDEX</p>
+            <h2 id="public-catalog-title">One Field. Every public source.</h2>
+            <p class="subhead">Explore the same dated public repository snapshot as PhiOS Web and native PhiOS. A repository is not automatically an installable app.</p>
+            <button type="button" class="ghost-button catalog-toggle" id="catalog-toggle" aria-expanded="false" aria-controls="catalog-panel">EXPLORE PUBLIC SOURCES</button>
+            <div class="catalog-panel" id="catalog-panel" hidden>
+              <p class="micro-copy">DISCOVERY ONLY · No APKs, executables, or native permissions are installed or launched here. Public GitHub source links open only after you tap.</p>
+              <label class="field-label" for="catalog-query">FIND A REPOSITORY</label>
+              <input id="catalog-query" type="search" autocomplete="off" placeholder="Project name or description">
+              <p class="micro-copy" id="catalog-meta" role="status" aria-live="polite"></p>
+              <div class="public-catalog-results" id="catalog-results" role="list" aria-label="Public source repositories"></div>
+              <button type="button" class="ghost-button" id="catalog-more" hidden>SHOW MORE SOURCES</button>
+            </div>
+          </section>
           <section class="home-editor" id="home-editor" aria-label="Customize home shortcuts" hidden>
             <h2>Make it yours.</h2>
             <p>Move shortcuts using the arrow buttons. Changes save in this browser and travel in your JSON backup.</p>
