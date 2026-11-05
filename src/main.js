@@ -4,6 +4,7 @@ import {
 } from "./core.mjs";
 import { initLivingShell } from "./living.mjs";
 import { initPublicCatalog } from "./catalog.mjs";
+import { initPortableShelf } from "./shelf-ui.mjs";
 import { inspectBrowserGpu } from "./browser-gpu.mjs";
 import {initFieldReceiver} from "./field-receiver.mjs";
 import { createPortablePassportStore, parsePortablePassport } from "./operator-passport.mjs";
@@ -332,7 +333,7 @@ async function registerOfflineShell() {
 
 paintPreferences();
 paintOperator();
-initPublicCatalog();
+initPublicCatalog({shelf:initPortableShelf()});
 initFieldReceiver({showToast});
 updateNote();
 updateClock();
