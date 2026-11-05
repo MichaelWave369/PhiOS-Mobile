@@ -3,6 +3,7 @@ import {
   serializeBackup, parseBackup
 } from "./core.mjs";
 import { initLivingShell } from "./living.mjs";
+import { initPublicCatalog } from "./catalog.mjs";
 import { inspectBrowserGpu } from "./browser-gpu.mjs";
 import {initFieldReceiver} from "./field-receiver.mjs";
 import { createPortablePassportStore, parsePortablePassport } from "./operator-passport.mjs";
@@ -331,6 +332,7 @@ async function registerOfflineShell() {
 
 paintPreferences();
 paintOperator();
+initPublicCatalog();
 initFieldReceiver({showToast});
 updateNote();
 updateClock();
