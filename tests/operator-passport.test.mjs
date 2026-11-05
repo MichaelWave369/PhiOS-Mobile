@@ -30,5 +30,5 @@ test("import is explicit, local, exportable and reversible without touching shel
 test("service-worker precache includes standalone SDK and a new cache generation",async()=>{
  const sw=await readFile(new URL("../sw.js",import.meta.url),"utf8");
  assert.match(sw,/src\/operator-passport\.mjs/);
- assert.match(sw,/phios-mobile-universal-catalog-r1-v2/);
+ assert.match(sw,/phios-mobile-universal-shelf-r2-v3/);
 });

@@ -62,6 +62,18 @@
             <button type="button" class="app-tile" data-shortcut="about" data-open="about"><span class="app-icon">Φ</span><span>About</span><small>Scope</small></button>
             <button type="button" class="app-tile" data-shortcut="phisurf" id="grid-surf"><span class="app-icon">✳</span><span>PhiSurf</span><small>Navigate</small></button>
           </div>
+          <section class="portable-shelf" aria-labelledby="portable-shelf-heading">
+            <p class="eyebrow">PHIOS UNIVERSAL SHELL · R2</p>
+            <h2 id="portable-shelf-heading">My App Shelf</h2>
+            <p id="mobile-shelf-status" class="micro-copy" role="status" aria-live="polite">Public-source bookmarks only. Nothing is installed.</p>
+            <div id="mobile-shelf-list" class="portable-shelf-list" role="list" aria-label="Pinned source repositories"></div>
+            <div class="portable-shelf-actions">
+              <button type="button" class="ghost-button" id="mobile-shelf-export">EXPORT SHELF</button>
+              <button type="button" class="ghost-button" id="mobile-shelf-import">IMPORT SHELF</button>
+            </div>
+            <input id="mobile-shelf-import-file" type="file" accept=".json,application/json" hidden aria-label="Select portable source-only PhiOS shelf backup">
+            <p class="micro-copy">Portable JSON contains bookmark IDs, not applications or permissions. Export/import is explicit; there is no automatic sync.</p>
+          </section>
           <section class="public-catalog" aria-labelledby="public-catalog-title">
             <p class="eyebrow">UNIVERSAL PHIOS SHELL · PUBLIC SOURCE INDEX</p>
             <h2 id="public-catalog-title">One Field. Every public source.</h2>

@@ -22,7 +22,7 @@ export function validatePublicCatalog(value=PUBLIC_CATALOG){
   return value;
 }
 
-export function initPublicCatalog(){
+export function initPublicCatalog({shelf}={}){
   const toggle=document.getElementById("catalog-toggle"),panel=document.getElementById("catalog-panel");
   const results=document.getElementById("catalog-results"),query=document.getElementById("catalog-query");
   const more=document.getElementById("catalog-more"),status=document.getElementById("catalog-meta");
@@ -46,7 +46,15 @@ export function initPublicCatalog(){
       note.textContent=(item.language||"Unknown language")+" · SOURCE ONLY"+(item.archived?" · ARCHIVED":"");
       const link=document.createElement("a");link.href=item.repository;link.target="_blank";link.rel="noopener noreferrer";
       link.textContent="VIEW SOURCE ↗";link.setAttribute("aria-label","View "+item.name+" public GitHub source in a new tab");
-      info.append(name,description,note);row.append(info,link);results.append(row);
+      const actions=document.createElement("div");actions.className="public-catalog-actions";
+      const pin=document.createElement("button");pin.type="button";pin.className="ghost-button";
+      pin.dataset.shelfPin=item.id;
+      pin.setAttribute("aria-label","Pin or unpin "+item.name+" public source");
+      pin.setAttribute("aria-pressed",String(Boolean(shelf?.isPinned(item.id))));
+      pin.textContent=shelf?.isPinned(item.id)?"UNPIN":"PIN SOURCE";
+      pin.addEventListener("click",()=>shelf?.toggle(item.id));
+      actions.append(pin,link);info.append(name,description,note);
+      row.append(info,actions);results.append(row);
     }
     shown+=batch.length;
     more.hidden=shown>=matching.length;
@@ -64,5 +72,12 @@ export function initPublicCatalog(){
     if(!panel.hidden){filter();query.focus();}
   });
   query.addEventListener("input",filter);
+  document.addEventListener("phios-shelf-changed",()=>{
+    results.querySelectorAll("[data-shelf-pin]").forEach(button=>{
+      const pinned=Boolean(shelf?.isPinned(button.dataset.shelfPin));
+      button.textContent=pinned?"UNPIN":"PIN SOURCE";
+      button.setAttribute("aria-pressed",String(pinned));
+    });
+  });
   more.addEventListener("click",append);
 }
