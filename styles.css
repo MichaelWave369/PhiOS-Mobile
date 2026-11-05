@@ -134,3 +134,19 @@ html.reduce-motion.operator-halo .hero-card {animation:none}
 .field-receiver-mobile #field-receiver-routes{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
 .field-receiver-mobile #field-receiver-routes a{font-size:.78rem;color:#8cecf0}
 .field-receiver-mobile .micro-copy{font-size:.71rem;line-height:1.65}
+
+/* Universal Shell R1: searchable public sources, never install controls. */
+.public-catalog{margin:20px 0 25px;padding:16px;border:1px solid #5c90b0;border-radius:16px;background:linear-gradient(145deg,#13253b,#0b1929)}
+.public-catalog h2{font-size:1.1rem;margin:5px 0 8px;color:#dff5ff}
+.public-catalog .subhead{font-size:.77rem;line-height:1.5}
+.catalog-toggle{width:100%;margin-top:12px}
+.catalog-panel{margin-top:15px;border-top:1px solid #5788a74a;padding-top:13px}
+.catalog-panel[hidden],#catalog-more[hidden]{display:none}
+#catalog-query{width:100%;min-height:44px;box-sizing:border-box;background:#071629;color:#e6f8ff;border:1px solid #548da8;border-radius:10px;padding:10px;margin:8px 0}
+.public-catalog-results{display:grid;gap:10px}
+.public-catalog-row{border:1px solid #42617d;border-radius:11px;padding:12px;background:#101d34}
+.public-catalog-row strong{display:block;color:#8ceaff;font-size:.9rem;overflow-wrap:anywhere}
+.public-catalog-row p{font-size:.75rem;color:#b8cde0;line-height:1.5;margin:6px 0;overflow-wrap:anywhere}
+.public-catalog-row small{font-size:.68rem;color:#efc78e}
+.public-catalog-row a{display:block;color:#9fecff;text-decoration:none;font-size:.75rem;font-weight:800;border:1px solid #5d96ae;border-radius:8px;text-align:center;margin-top:10px;padding:11px}
+.public-catalog-row a:focus-visible,#catalog-toggle:focus-visible{outline:3px solid #b8f6ff;outline-offset:2px}
