@@ -150,3 +150,20 @@ html.reduce-motion.operator-halo .hero-card {animation:none}
 .public-catalog-row small{font-size:.68rem;color:#efc78e}
 .public-catalog-row a{display:block;color:#9fecff;text-decoration:none;font-size:.75rem;font-weight:800;border:1px solid #5d96ae;border-radius:8px;text-align:center;margin-top:10px;padding:11px}
 .public-catalog-row a:focus-visible,#catalog-toggle:focus-visible{outline:3px solid #b8f6ff;outline-offset:2px}
+
+/* Universal Shelf R2: touch-sized local source bookmarks. No installer controls. */
+.portable-shelf{margin:18px 0 22px;padding:16px;border:1px solid #678daf;border-radius:16px;background:linear-gradient(145deg,#122e48,#091a30)}
+.portable-shelf h2{font-size:1.1rem;margin:4px 0 8px;color:#c0f1ff}
+.portable-shelf-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.portable-shelf-actions button{flex:1 1 125px;min-height:44px}
+.portable-shelf-list{display:grid;gap:9px;max-height:370px;overflow:auto}
+.portable-shelf-row{padding:11px;border:1px solid #4785a6;border-radius:11px;background:#14243b;display:flex;align-items:flex-start;gap:10px;justify-content:space-between}
+.portable-shelf-row-info{flex:1;min-width:0}
+.portable-shelf-row strong{font-size:.85rem;display:block;color:#b3f0ff;overflow-wrap:anywhere}
+.portable-shelf-row small{display:block;font-size:.66rem;color:#ebd4a4;margin:5px 0}
+.portable-shelf-row a{color:#a3f3ff;display:inline-block;padding:8px 0;font-size:.72rem;font-weight:700}
+.portable-shelf-row-actions{display:flex;gap:4px}
+.portable-shelf-row-actions button{min-width:28px;min-height:38px;background:#1e4762;color:#fff;border:1px solid #6bb4d2;border-radius:7px}
+.portable-shelf-row-actions button:disabled{opacity:.4}
+.public-catalog-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.public-catalog-actions button,.public-catalog-actions a{flex:1 1 115px;min-height:44px}
