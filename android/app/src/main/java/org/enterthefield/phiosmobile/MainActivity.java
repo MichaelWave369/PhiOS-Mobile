@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.LauncherActivityInfo;
 import android.content.pm.LauncherApps;
 import android.graphics.Color;
@@ -410,6 +411,9 @@ public final class MainActivity extends Activity {
         Button pinAction = button(isPinned ? "Unpin" : "Pin", () -> togglePin(info));
         pinAction.setContentDescription((isPinned ? "Unpin " : "Pin ") + info.getLabel());
         row.addView(pinAction, new LinearLayout.LayoutParams(dp(67), dp(48)));
+        Button manageAction = button("Info", () -> openInstalledAppManagement(info));
+        manageAction.setContentDescription("Manage installed Android app " + info.getLabel() + " in system settings");
+        row.addView(manageAction, new LinearLayout.LayoutParams(dp(58), dp(48)));
 
         row.setContentDescription("Open " + info.getLabel()
                 + (isPinned ? ", pinned" : ", not pinned"));
@@ -421,6 +425,81 @@ public final class MainActivity extends Activity {
             return true;
         });
         appList.addView(row, rowParams);
+    }
+
+    /**
+     * R5: manage *actually observed* current-user Android launcher activities.
+     * System settings and the OS package-uninstaller, not PhiOS, perform effects.
+     * Not connected to public GitHub source pins or unverified APK downloads.
+     */
+    private boolean currentUserHasLaunchablePackage(String packageName) {
+        if (launcherApps == null || packageName == null) return false;
+        try {
+            List<LauncherActivityInfo> current =
+                    launcherApps.getActivityList(packageName, Process.myUserHandle());
+            return current != null && !current.isEmpty();
+        } catch (RuntimeException error) {
+            return false;
+        }
+    }
+
+    private void openInstalledAppManagement(LauncherActivityInfo info) {
+        String packageName = info.getComponentName().getPackageName();
+        boolean observed = currentUserHasLaunchablePackage(packageName);
+        if (!AppManagementPolicy.mayOpenAppInfo(packageName, observed)) {
+            Toast.makeText(this, "Android no longer reports this installed launcher app.",
+                    Toast.LENGTH_LONG).show();
+            reloadInstalledApps();
+            return;
+        }
+        int flags = info.getApplicationInfo().flags;
+        boolean system = (flags & (ApplicationInfo.FLAG_SYSTEM
+                | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
+        boolean mayUninstall = AppManagementPolicy.canRequestUninstall(
+                packageName, getPackageName(), observed, system);
+
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this)
+                .setTitle("Manage installed app · " + info.getLabel())
+                .setMessage("Android reports a launchable app for the current user:\n"
+                        + packageName + "\n\n"
+                        + "Open Android App info to inspect permissions, storage, version, "
+                        + "and available update or uninstall controls. "
+                        + "The platform, not PhiOS, determines what is permitted. "
+                        + "No source-bookmark or GitHub install status is inferred.")
+                .setPositiveButton("Android App info", (d, which) -> {
+                    try {
+                        Intent appInfo = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", packageName, null));
+                        startActivity(appInfo);
+                    } catch (ActivityNotFoundException | SecurityException error) {
+                        Toast.makeText(this, "Android App info unavailable.", Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null);
+        if (mayUninstall) {
+            dialog.setNeutralButton("Request uninstall", (d, which) -> {
+                new AlertDialog.Builder(this)
+                        .setTitle("Continue to Android uninstaller?")
+                        .setMessage("This can remove " + info.getLabel() + " and its app data. "
+                                + "Android will require its own approval. PhiOS cannot undo "
+                                + "the removal or guarantee rollback. Continue?")
+                        .setPositiveButton("Open Android uninstaller", (confirm, response) -> {
+                            if (!currentUserHasLaunchablePackage(packageName)) {
+                                Toast.makeText(this, "App is no longer observed.", Toast.LENGTH_LONG).show();
+                                return;
+                            }
+                            try {
+                                Intent uninstall = new Intent(Intent.ACTION_DELETE,
+                                        Uri.fromParts("package", packageName, null));
+                                startActivity(uninstall);
+                            } catch (ActivityNotFoundException | SecurityException error) {
+                                Toast.makeText(this, "Android uninstaller unavailable.", Toast.LENGTH_LONG).show();
+                            }
+                        })
+                        .setNegativeButton("Keep app", null).show();
+            });
+        }
+        dialog.show();
     }
 
     private void togglePin(LauncherActivityInfo info) {

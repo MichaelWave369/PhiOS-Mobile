@@ -40,6 +40,34 @@ export function initReviewedAppCenter(){
     return;
   }
   if(status)status.textContent="1 CI-reviewed browser PWA · production endpoint not independently verified · "+(PUBLIC_CATALOG.apps.length-1)+" other public sources remain source-only";
+  const context=document.getElementById("mobile-pwa-context");
+  if(context){
+    const standalone=window.matchMedia?.("(display-mode: standalone)")?.matches===true||
+      window.navigator.standalone===true;
+    context.textContent=standalone
+      ?"Current Mobile PWA is running in standalone display mode; install version and provenance are not attested."
+      :"Current Mobile PWA is a browser session. Installed status on this device is unknown.";
+  }
+  const check=document.getElementById("mobile-pwa-update");
+  const updateStatus=document.getElementById("mobile-pwa-update-status");
+  if(check&&updateStatus)check.addEventListener("click",async()=>{
+    if(!("serviceWorker" in navigator)){
+      updateStatus.textContent="No service-worker update interface on this browser.";
+      return;
+    }
+    updateStatus.textContent="Checking this origin's PWA service worker…";
+    try{
+      const registration=await navigator.serviceWorker.getRegistration("./");
+      if(!registration){
+        updateStatus.textContent="No PWA service-worker registration found. No update applied.";
+        return;
+      }
+      await registration.update();
+      updateStatus.textContent="Service-worker update check finished; a newer installation is not guaranteed. Manage or uninstall in browser/device settings.";
+    }catch{
+      updateStatus.textContent="PWA update check unavailable, possibly offline. No update applied or claimed.";
+    }
+  });
   if(open){
     open.href=app.launch_url;
     open.target="_blank";

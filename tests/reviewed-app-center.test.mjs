@@ -46,3 +46,16 @@ test("Mobile PWA opens only an explicit external browser page; no APK install",(
   assert(main.includes("initReviewedAppCenter();"));
   assert(!main.includes("PackageInstaller"));
 });
+
+
+test("R5 PWA management is browser-owned and install state is not invented",async()=>{
+  const app=await readFile(new URL("src/app-center.mjs",root),"utf8");
+  for(const id of ["mobile-pwa-context","mobile-pwa-update","mobile-pwa-update-status"])
+    assert(html.includes('id="'+id+'"'),id);
+  assert(app.includes("(display-mode: standalone)"));
+  assert(app.includes('navigator.serviceWorker.getRegistration("./")'));
+  assert(app.includes("await registration.update()"));
+  assert(app.includes("Installed status on this device is unknown"));
+  assert(html.includes("No rollback authority is claimed"));
+  assert(!app.includes("PackageInstaller"));
+});
