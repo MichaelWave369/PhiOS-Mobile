@@ -167,3 +167,11 @@ html.reduce-motion.operator-halo .hero-card {animation:none}
 .portable-shelf-row-actions button:disabled{opacity:.4}
 .public-catalog-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .public-catalog-actions button,.public-catalog-actions a{flex:1 1 115px;min-height:44px}
+
+/* R4: mobile reviewed Web candidate, never an APK installer. */
+.reviewed-mobile-app{margin:19px 0 22px;padding:17px;border:1px solid #4e9bc0;border-radius:17px;background:linear-gradient(140deg,#132c45,#10182d)}
+.reviewed-mobile-app h2{margin:6px 0 8px;color:#bcefff;font-size:1.12rem}
+.reviewed-mobile-app .subhead{line-height:1.55}
+.reviewed-mobile-app .micro-copy{line-height:1.55}
+.reviewed-app-open{display:block;text-decoration:none;text-align:center;margin:12px 0;min-height:44px;line-height:44px;color:#c8faff}
+.reviewed-app-open[hidden]{display:none}
