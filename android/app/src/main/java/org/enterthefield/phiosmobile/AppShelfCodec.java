@@ -32,8 +32,9 @@ public final class AppShelfCodec {
     public static final String SOURCE_SHA = "e295f6265e60032de98a2acd8e53295505fc47e8";
     private static final DateTimeFormatter CLOCK = DateTimeFormatter
             .ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
-    private static final Set<String> WIRE_KEYS = Set.of(
-            "format", "version", "catalog_source_sha", "exported_at", "pinned");
+    private static final Set<String> WIRE_KEYS = Collections.unmodifiableSet(
+            new HashSet<>(java.util.Arrays.asList(
+                "format", "version", "catalog_source_sha", "exported_at", "pinned")));
     private AppShelfCodec() {}
 
     public static final class Source {
