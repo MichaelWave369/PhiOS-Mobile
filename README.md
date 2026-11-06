@@ -4,6 +4,12 @@
 
 PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1.1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
 
+## Φ Universal App Center R5A: actual platform-owned app management
+
+**Native Android HOME test APK:** Every Android-reported current-user *launchable installed app* now has an accessible **Info** button that opens Android App info. For third-party, non-system apps other than the PhiOS Home launcher itself, an explicitly confirmed **Request uninstall** hands the request to Android's own uninstaller and requires Android's approval. The APK does not gain package installation permissions or silently remove apps. No automatic rollback is guaranteed. Existing pinned installed apps, public source shelf, source JSON transfers and stock Home recovery remain distinct.
+
+**Mobile browser PWA:** The reviewed Web app card now observes standalone display mode without claiming package provenance and offers a **user-initiated** scoped service-worker update check. Browser/device settings own PWA uninstall, updates and version display. This is not an APK install or phone firmware update. Real Android emulator and JVM tests, not PWA tests alone, are required to qualify native management.
+
 ## Φ Universal App Center R4 (mobile browser shell)
 
 The Mobile **PWA Home** now displays a reviewed Web app card for PhiOS Web, using the same exact `phios.app-center-reviews.v1` registry as PhiOS Core and `phi-field`. Its single reviewed project (`github:1442243366`) has evidence from the PhiOS Web static/Chromium build and launches **only on an explicit tap** to `https://phi-field.com/os/` in an external browser. The candidate is **CI-reviewed, not independently live-verified**. Browser-managed installation may be offered there; there is no automatic PWA install.
