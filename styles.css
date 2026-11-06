@@ -175,3 +175,10 @@ html.reduce-motion.operator-halo .hero-card {animation:none}
 .reviewed-mobile-app .micro-copy{line-height:1.55}
 .reviewed-app-open{display:block;text-decoration:none;text-align:center;margin:12px 0;min-height:44px;line-height:44px;color:#c8faff}
 .reviewed-app-open[hidden]{display:none}
+
+
+/* R5A: platform-managed PWA lifecycle, never APK install authority. */
+.mobile-pwa-lifecycle{margin-top:14px;padding:12px;border:1px solid #4b8099;border-radius:12px;background:#0e243d}
+.mobile-pwa-lifecycle h3{margin:0 0 8px;font-size:.9rem;color:#b6ebf5}
+.mobile-pwa-lifecycle button{width:100%;min-height:44px;margin:9px 0}
+.mobile-pwa-lifecycle p{line-height:1.55}
