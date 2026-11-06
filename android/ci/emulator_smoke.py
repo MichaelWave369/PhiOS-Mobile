@@ -425,6 +425,26 @@ def portable_source_shelf_controls():
     visible("Home help", "source-shelf-closed")
 
 
+def installed_app_management_controls():
+    """Native R5 action: OS App info and OS-owned uninstall only for observed apps."""
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("Search launchable apps", "installed-manage-search")
+    tap(nodes, "Search launchable apps")
+    adb("shell", "input", "text", "CI%sTarget")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    nodes = visible("Manage installed Android app PhiOS CI Target", "installed-manage-button")
+    tap(nodes, "Manage installed Android app PhiOS CI Target")
+    nodes = visible("Manage installed app", "installed-manage-dialog")
+    demand(locate(nodes, "Android App info") is not None,
+           "Observed installed app missing OS-owned App info action")
+    demand(locate(nodes, "Request uninstall") is not None,
+           "Non-system test fixture missing OS-mediated uninstall request")
+    screenshot("08b-r5-installed-app-manage")
+    tap(nodes, "Cancel")
+    visible("Home help", "installed-manage-return-home")
+
+
 def local_backup_controls():
     # Validate native menu only. Document-provider save/open is a separate gate.
     adb("shell", "am", "force-stop", PKG)
@@ -896,6 +916,7 @@ def main():
             ("Launch real Android fixture from list and pinned shelf", real_app_launch_and_shelf),
             ("Home layout survives restart and reset", layout_preferences),
             ("Local profile backup and restore controls", local_backup_controls),
+            ("Manage observed installed app with OS controls, no uninstall effect", installed_app_management_controls),
             ("Native portable public source shelf remains distinct from installed apps", portable_source_shelf_controls),
             ("Real DocumentsUI export, cancelled import, confirmed restore and persistence", document_provider_roundtrip),
             ("Accessible pin actions and stock Home recovery guide", accessibility_and_home_recovery),
