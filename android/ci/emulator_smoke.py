@@ -405,6 +405,26 @@ def layout_preferences():
     visible("A different kind of mobile.", "layout-restored")
     screenshot("08-layout-restored")
 
+def portable_source_shelf_controls():
+    """Exercise the *native* source shelf without installing an APK or changing Home."""
+    adb("shell", "am", "force-stop", PKG)
+    adb("shell", "am", "start", "-W", "-n", COMPONENT)
+    nodes = visible("Source Shelf", "source-shelf-home")
+    tap(nodes, "Source Shelf")
+    nodes = visible("Portable Source Shelf", "source-shelf-dialog")
+    demand(locate(nodes, "PUBLIC SOURCE BOOKMARKS") is not None,
+           "Native source shelf missing honest public-source boundary")
+    demand(locate(nodes, "Find and pin public source") is not None,
+           "Native source shelf missing explicit discovery")
+    demand(locate(nodes, "Export source shelf JSON") is not None,
+           "Native source shelf missing portable export")
+    demand(locate(nodes, "Import source shelf JSON") is not None,
+           "Native source shelf missing portable import")
+    screenshot("08a-native-source-shelf")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    visible("Home help", "source-shelf-closed")
+
+
 def local_backup_controls():
     # Validate native menu only. Document-provider save/open is a separate gate.
     adb("shell", "am", "force-stop", PKG)
@@ -876,6 +896,7 @@ def main():
             ("Launch real Android fixture from list and pinned shelf", real_app_launch_and_shelf),
             ("Home layout survives restart and reset", layout_preferences),
             ("Local profile backup and restore controls", local_backup_controls),
+            ("Native portable public source shelf remains distinct from installed apps", portable_source_shelf_controls),
             ("Real DocumentsUI export, cancelled import, confirmed restore and persistence", document_provider_roundtrip),
             ("Accessible pin actions and stock Home recovery guide", accessibility_and_home_recovery),
             ("Temporarily select PhiOS HOME and restore stock HOME", home_role_roundtrip),
