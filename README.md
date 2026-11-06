@@ -4,6 +4,12 @@
 
 PhiOS Mobile extends the PhiOS philosophy to touch-first devices. **Rung 1.1 is a standalone browser/PWA prototype**, not a flashable Android OS, a custom ROM, or evidence of phone hardware compatibility.
 
+## Φ Universal App Center R4 (mobile browser shell)
+
+The Mobile **PWA Home** now displays a reviewed Web app card for PhiOS Web, using the same exact `phios.app-center-reviews.v1` registry as PhiOS Core and `phi-field`. Its single reviewed project (`github:1442243366`) has evidence from the PhiOS Web static/Chromium build and launches **only on an explicit tap** to `https://phi-field.com/os/` in an external browser. The candidate is **CI-reviewed, not independently live-verified**. Browser-managed installation may be offered there; there is no automatic PWA install.
+
+**The native Android HOME APK is unchanged.** This adds no APK installer, new phone permission, package operation or change to Android's default launcher. Other catalog entries remain public-source bookmarks until individually qualified.
+
 ## Universal Shell R2: portable App Shelf
 
 The PhiOS Mobile **PWA Home** now includes a local App Shelf that pins, unpins, reorders, exports and imports source-only bookmarks from the shared public catalog. Exactly the same `phios-app-shelf` JSON (24 known public IDs max, 16 KiB) works on PhiOS Web and the native PhiOS Python shelf CLI. Shelf storage uses a dedicated `phios.mobile.shelf.r2` key and does not alter existing Notes/Vault, Passport or Field Companion preferences. Import overwrites bookmarks **only after an explicit confirmation**. No automatic sync or install is attempted.
