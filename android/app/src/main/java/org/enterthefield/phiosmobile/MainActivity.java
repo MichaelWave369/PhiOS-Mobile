@@ -59,6 +59,9 @@ public final class MainActivity extends Activity {
     private static final String PINNED = "pinned";
     private static final int EXPORT_PROFILE_REQUEST = 4101;
     private static final int IMPORT_PROFILE_REQUEST = 4102;
+    private static final int EXPORT_SOURCE_SHELF_REQUEST = 4103;
+    private static final int IMPORT_SOURCE_SHELF_REQUEST = 4104;
+    private static final String SOURCE_SHELF_KEY = "portable-source-shelf-r3";
     private LauncherApps launcherApps;
     private SharedPreferences preferences;
     private Set<String> pinned = new HashSet<>();
@@ -240,7 +243,9 @@ public final class MainActivity extends Activity {
                 .setTitle("Φ GPU Observatory")
                 .setMessage(GpuCapabilitySummary.describe(this))
                 .setPositiveButton("Close", null).show());
-        Button[] controls = {all, favorites, layout, sysSettings, gpu};
+        Button sourceShelf = button("Source Shelf", this::openSourceShelf);
+        sourceShelf.setContentDescription("Open portable public-source bookmarks, not installed Android apps");
+        Button[] controls = {all, favorites, layout, sysSettings, gpu, sourceShelf};
         int columns = tight ? 2 : 4;
         for (int offset = 0; offset < controls.length; offset += columns) {
             LinearLayout line = new LinearLayout(this);
@@ -640,8 +645,9 @@ public final class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != EXPORT_PROFILE_REQUEST && requestCode != IMPORT_PROFILE_REQUEST)
-            return;
+        if (requestCode != EXPORT_PROFILE_REQUEST && requestCode != IMPORT_PROFILE_REQUEST
+                && requestCode != EXPORT_SOURCE_SHELF_REQUEST
+                && requestCode != IMPORT_SOURCE_SHELF_REQUEST) return;
         if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
         Uri document = data.getData();
         // The system picker grants scoped access to a single selected document.
@@ -652,7 +658,9 @@ public final class MainActivity extends Activity {
             return;
         }
         if (requestCode == EXPORT_PROFILE_REQUEST) exportProfile(document);
-        else importProfile(document);
+        else if (requestCode == IMPORT_PROFILE_REQUEST) importProfile(document);
+        else if (requestCode == EXPORT_SOURCE_SHELF_REQUEST) exportSourceShelf(document);
+        else importSourceShelf(document);
     }
 
     private void exportProfile(Uri document) {
@@ -722,6 +730,272 @@ public final class MainActivity extends Activity {
         applyHomeLayout();
         renderApps();
         Toast.makeText(this, "Launcher profile restored locally.", Toast.LENGTH_LONG).show();
+    }
+
+    /**
+     * SOURCE shelf: a separate, explicit bookmark collection. This code NEVER
+     * changes PINNED, Android LauncherApps state, app permissions or Home role.
+     */
+    private AppShelfCodec.Catalog sourceCatalog() throws Exception {
+        try (InputStream stream = getAssets().open("public-repo-catalog.v1.json")) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            int count;
+            while ((count = stream.read(buffer)) != -1) {
+                if (bytes.size() + count > AppShelfCodec.MAX_CATALOG_BYTES)
+                    throw new java.io.IOException("Bundled public catalog exceeds limit.");
+                bytes.write(buffer, 0, count);
+            }
+            return AppShelfCodec.readCatalog(bytes.toByteArray());
+        }
+    }
+
+    private List<String> sourcePins(AppShelfCodec.Catalog catalog) throws Exception {
+        String current = preferences.getString(SOURCE_SHELF_KEY, null);
+        if (current == null) return new ArrayList<>();
+        return AppShelfCodec.decode(current.getBytes(StandardCharsets.UTF_8), catalog);
+    }
+
+    private boolean persistSourcePins(List<String> pins, AppShelfCodec.Catalog catalog) {
+        try {
+            String portable = AppShelfCodec.encode(pins, catalog, java.time.Instant.now());
+            if (!preferences.edit().putString(SOURCE_SHELF_KEY, portable).commit())
+                throw new java.io.IOException("Private bookmark storage refused to write.");
+            return true;
+        } catch (Exception error) {
+            showBackupError("Source-only shelf not saved", error);
+            return false;
+        }
+    }
+
+    private void openSourceShelf() {
+        try {
+            AppShelfCodec.Catalog catalog = sourceCatalog();
+            List<String> pins = sourcePins(catalog);
+            LinearLayout content = new LinearLayout(this);
+            content.setOrientation(LinearLayout.VERTICAL);
+            content.setPadding(dp(16), dp(8), dp(16), dp(10));
+            content.addView(text("PUBLIC SOURCE BOOKMARKS · NOT INSTALLED APPS", 12, CYAN, true));
+            content.addView(text(
+                    pins.size() + " / 24 pinned. Same portable JSON as PhiOS Web and Mobile PWA. "
+                    + "No silent APK installs, Home changes, remote synchronization or permissions. "
+                    + "View Source opens an external browser only if you tap it.",
+                    12, MUTED, false));
+            final AlertDialog[] holder = new AlertDialog[1];
+            LinearLayout controls = new LinearLayout(this);
+            controls.setOrientation(LinearLayout.VERTICAL);
+            Button add = button("Find and pin public source", () -> {
+                holder[0].dismiss();
+                searchPublicSource(catalog);
+            });
+            Button export = button("Export source shelf JSON", () -> {
+                holder[0].dismiss();
+                beginExportSourceShelf();
+            });
+            Button restore = button("Import source shelf JSON", () -> {
+                holder[0].dismiss();
+                beginImportSourceShelf();
+            });
+            controls.addView(add);
+            controls.addView(export);
+            controls.addView(restore);
+            content.addView(controls);
+
+            ScrollView scroll = new ScrollView(this);
+            LinearLayout list = new LinearLayout(this);
+            list.setOrientation(LinearLayout.VERTICAL);
+            if (pins.isEmpty()) list.addView(text(
+                    "No source bookmarks yet. Use Find and pin public source.", 12, MUTED, false));
+            for (int i = 0; i < pins.size(); i++) {
+                String id = pins.get(i);
+                int index = i;
+                AppShelfCodec.Source source = catalog.sources.get(id);
+                LinearLayout row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.VERTICAL);
+                row.setPadding(dp(7), dp(7), dp(7), dp(7));
+                row.setBackground(surface(PANEL, 10, Color.rgb(45, 92, 111)));
+                row.addView(text(source.name + " · SOURCE ONLY", 12, CYAN, true));
+                LinearLayout buttons = new LinearLayout(this);
+                buttons.setGravity(Gravity.CENTER_VERTICAL);
+                Button up = button("↑", () -> reorderSourcePin(pins, index, -1, catalog, holder[0]));
+                up.setContentDescription("Move " + source.name + " up");
+                up.setEnabled(i > 0);
+                Button down = button("↓", () -> reorderSourcePin(pins, index, 1, catalog, holder[0]));
+                down.setContentDescription("Move " + source.name + " down");
+                down.setEnabled(i + 1 < pins.size());
+                Button remove = button("Unpin", () -> {
+                    List<String> updated = new ArrayList<>(pins);
+                    updated.remove(id);
+                    if (persistSourcePins(updated, catalog)) {
+                        holder[0].dismiss();
+                        openSourceShelf();
+                    }
+                });
+                remove.setContentDescription("Remove public-source bookmark " + source.name);
+                Button view = button("Source ↗", () -> {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(source.repository)));
+                    } catch (ActivityNotFoundException error) {
+                        Toast.makeText(this, "No external browser is available.", Toast.LENGTH_LONG).show();
+                    }
+                });
+                view.setContentDescription("Open external browser for GitHub source " + source.name);
+                for (Button button : new Button[]{up, down, remove, view})
+                    buttons.addView(button, new LinearLayout.LayoutParams(0, dp(48), 1));
+                row.addView(buttons);
+                LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
+                rp.topMargin = dp(8);
+                list.addView(row, rp);
+            }
+            scroll.addView(list);
+            content.addView(scroll, new LinearLayout.LayoutParams(-1, dp(310)));
+            holder[0] = new AlertDialog.Builder(this)
+                    .setTitle("Φ Portable Source Shelf")
+                    .setView(content)
+                    .setNegativeButton("Close", null)
+                    .create();
+            holder[0].show();
+        } catch (Exception error) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Source shelf unavailable")
+                    .setMessage("The catalog or saved bookmark format could not be validated. "
+                            + "Existing Android app pins are untouched. "
+                            + "Reset only the source bookmarks if needed.\n\n"
+                            + String.valueOf(error.getMessage()))
+                    .setPositiveButton("Reset source bookmarks", (dialog, which) -> {
+                        preferences.edit().remove(SOURCE_SHELF_KEY).apply();
+                        openSourceShelf();
+                    })
+                    .setNegativeButton("Cancel", null).show();
+        }
+    }
+
+    private void reorderSourcePin(List<String> pins, int index, int offset,
+                                  AppShelfCodec.Catalog catalog, AlertDialog dialog) {
+        int target = index + offset;
+        if (index < 0 || target < 0 || target >= pins.size()) return;
+        List<String> reordered = new ArrayList<>(pins);
+        Collections.swap(reordered, index, target);
+        if (persistSourcePins(reordered, catalog)) {
+            dialog.dismiss();
+            openSourceShelf();
+        }
+    }
+
+    private void searchPublicSource(AppShelfCodec.Catalog catalog) {
+        EditText query = new EditText(this);
+        query.setSingleLine(true);
+        query.setHint("Type project name (e.g. PhiOS)");
+        new AlertDialog.Builder(this)
+                .setTitle("Find public source · 225 snapshot")
+                .setMessage("This lists public GitHub projects only, not APKs or launchable apps.")
+                .setView(query)
+                .setPositiveButton("Find", (dialog, which) -> {
+                    String needle = query.getText().toString().trim().toLowerCase(java.util.Locale.ROOT);
+                    if (needle.isEmpty()) {
+                        openSourceShelf();
+                        return;
+                    }
+                    List<AppShelfCodec.Source> matches = new ArrayList<>();
+                    for (AppShelfCodec.Source source : catalog.sources.values()) {
+                        if (source.name.toLowerCase(java.util.Locale.ROOT).contains(needle)
+                                || source.description.toLowerCase(java.util.Locale.ROOT).contains(needle)) {
+                            matches.add(source);
+                            if (matches.size() >= 20) break;
+                        }
+                    }
+                    if (matches.isEmpty()) {
+                        Toast.makeText(this, "No matching public source in snapshot.", Toast.LENGTH_LONG).show();
+                        openSourceShelf();
+                        return;
+                    }
+                    String[] titles = new String[matches.size()];
+                    for (int i = 0; i < matches.size(); i++)
+                        titles[i] = matches.get(i).name + " · SOURCE ONLY";
+                    new AlertDialog.Builder(this)
+                            .setTitle("Choose a source bookmark")
+                            .setItems(titles, (choice, selected) -> {
+                                AppShelfCodec.Source chosen = matches.get(selected);
+                                try {
+                                    List<String> pins = sourcePins(catalog);
+                                    if (pins.contains(chosen.id)) {
+                                        Toast.makeText(this, "Source already pinned.", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        pins.add(chosen.id);
+                                        if (!persistSourcePins(AppShelfCodec.validate(pins, catalog), catalog)) return;
+                                    }
+                                    openSourceShelf();
+                                } catch (Exception error) {
+                                    showBackupError("Source pin refused", error);
+                                }
+                            })
+                            .setNegativeButton("Cancel", (choice, which2) -> openSourceShelf())
+                            .show();
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> openSourceShelf())
+                .show();
+    }
+
+    private void beginExportSourceShelf() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        intent.putExtra(Intent.EXTRA_TITLE, "phios-app-shelf-r2.json");
+        try {
+            startActivityForResult(intent, EXPORT_SOURCE_SHELF_REQUEST);
+        } catch (ActivityNotFoundException error) {
+            Toast.makeText(this, "No document provider for source export.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void beginImportSourceShelf() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        try {
+            startActivityForResult(intent, IMPORT_SOURCE_SHELF_REQUEST);
+        } catch (ActivityNotFoundException error) {
+            Toast.makeText(this, "No document provider for source import.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void exportSourceShelf(Uri document) {
+        try {
+            AppShelfCodec.Catalog catalog = sourceCatalog();
+            String json = AppShelfCodec.encode(sourcePins(catalog), catalog, java.time.Instant.now());
+            try (OutputStream out = getContentResolver().openOutputStream(document, "wt")) {
+                if (out == null) throw new java.io.IOException("Document provider refused write.");
+                out.write(json.getBytes(StandardCharsets.UTF_8));
+                out.flush();
+            }
+            Toast.makeText(this, "Source-only shelf exported. Installed apps unchanged.",
+                    Toast.LENGTH_LONG).show();
+        } catch (Exception error) {
+            showBackupError("Source shelf export failed", error);
+        }
+    }
+
+    private void importSourceShelf(Uri document) {
+        try {
+            AppShelfCodec.Catalog catalog = sourceCatalog();
+            byte[] data = readBoundedDocument(document);
+            List<String> proposed = AppShelfCodec.decode(data, catalog);
+            StringBuilder preview = new StringBuilder("Replace ONLY source bookmarks with "
+                    + proposed.size() + " public GitHub IDs?\n\n");
+            for (String id : proposed)
+                preview.append("• ").append(catalog.sources.get(id).name).append("\n");
+            preview.append("\nInstalled Android app pins, layout, Home and permissions stay unchanged.");
+            new AlertDialog.Builder(this)
+                    .setTitle("Review portable source shelf")
+                    .setMessage(preview.toString())
+                    .setPositiveButton("Restore source pins", (dialog, which) -> {
+                        if (persistSourcePins(proposed, catalog)) openSourceShelf();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        } catch (Exception error) {
+            showBackupError("Source shelf import refused", error);
+        }
     }
 
     private void showBackupError(String message, Exception error) {
